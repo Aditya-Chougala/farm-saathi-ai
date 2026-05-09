@@ -1,0 +1,37 @@
+export const DISEASE_HINDI: Record<string, string> = {
+  Tomato___Early_blight: "टमाटर - अगेती झुलसा",
+  Tomato___Late_blight: "टमाटर - पछेती झुलसा",
+  Tomato___Bacterial_spot: "टमाटर - जीवाणु धब्बा",
+  Tomato___Leaf_Mold: "टमाटर - पत्ती फफूंदी",
+  Tomato___Septoria_leaf_spot: "टमाटर - सेप्टोरिया धब्बा",
+  Tomato___Spider_mites: "टमाटर - मकड़ी कीट",
+  Tomato___Target_Spot: "टमाटर - लक्ष्य धब्बा",
+  Tomato___Yellow_Leaf_Curl_Virus: "टमाटर - पीला पत्ती मरोड़",
+  Tomato___mosaic_virus: "टमाटर - मोज़ेक वायरस",
+  Tomato___healthy: "टमाटर - स्वस्थ",
+  Potato___Early_blight: "आलू - अगेती झुलसा",
+  Potato___Late_blight: "आलू - पछेती झुलसा",
+  Potato___healthy: "आलू - स्वस्थ",
+  Rice___Rice_blast: "धान - ब्लास्ट रोग",
+  Rice___Leaf_scald: "धान - पत्ती झुलसन",
+  Rice___Narrow_brown_leaf_spot: "धान - भूरा धब्बा",
+  Rice___healthy: "धान - स्वस्थ",
+  Wheat___Brown_rust: "गेहूं - भूरा रतुआ",
+  Wheat___Yellow_rust: "गेहूं - पीला रतुआ",
+  Wheat___healthy: "गेहूं - स्वस्थ",
+  "Corn_(maize)___Common_rust": "मक्का - साधारण रतुआ",
+  "Corn_(maize)___Cercospora_leaf_spot": "मक्का - सरकोस्पोरा धब्बा",
+  "Corn_(maize)___Northern_Leaf_Blight": "मक्का - उत्तरी झुलसा",
+  "Corn_(maize)___healthy": "मक्का - स्वस्थ",
+  Apple___Apple_scab: "सेब - खुरंट रोग",
+  Apple___Black_rot: "सेब - काला सड़न",
+  Apple___healthy: "सेब - स्वस्थ",
+  Grape___Black_rot: "अंगूर - काला सड़न",
+  Grape___healthy: "अंगूर - स्वस्थ",
+  Pepper___Bacterial_spot: "मिर्च - जीवाणु धब्बा",
+  Pepper___healthy: "मिर्च - स्वस्थ",
+};
+
+export function diseaseHindi(raw: string): string {
+  return DISEASE_HINDI[raw] ?? raw.replace(/_/g, " ");
+}
