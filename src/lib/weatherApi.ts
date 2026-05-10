@@ -36,7 +36,7 @@ export async function fetchWeather(): Promise<Weather> {
   if (cached) return cached;
   const { lat, lon } = await getCoords();
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m&t=${Date.now()}`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,weathercode&timezone=Asia/Kolkata&t=${Date.now()}`;
     const r = await fetch(url);
     const j = await r.json();
     const c = j.current ?? {};

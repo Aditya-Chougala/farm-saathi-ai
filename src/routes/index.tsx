@@ -18,9 +18,10 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const { lang } = useLang();
   const [weather, setWeather] = useState<Weather | null>(null);
-  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  const [quote, setQuote] = useState<string>(QUOTES[0]);
 
   useEffect(() => {
+    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
     fetchWeather().then(setWeather).catch(() => {});
   }, []);
 
@@ -60,7 +61,7 @@ function HomePage() {
           {MANDI_PRICES.slice(0, 5).map((m) => (
             <div key={m.crop} className="flex items-center justify-between text-sm py-1">
               <span className="font-semibold">{m.hi} <span className="text-muted-foreground text-xs">{m.crop}</span></span>
-              <span className="font-bold">₹{m.price}/kg {m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→"}</span>
+              <span className="font-bold">₹{m.price}/{m.unit} {m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→"}</span>
             </div>
           ))}
         </div>

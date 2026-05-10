@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { Camera, Upload, Loader2, Share2, MapPin, Bell, RotateCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, Upload, Loader2, Share2, MapPin, Bell, RotateCw, X } from "lucide-react";
 import { runEnsemble, type EnsembleVerdict } from "@/services/disease/ensembleEngine";
 import { getTreatment, type Treatment } from "@/services/disease/groqTreatmentService";
 import { diseaseHindi } from "@/constants/diseaseTranslations";
@@ -27,19 +27,66 @@ interface HistoryItem {
   confidence: number;
 }
 
+function fileToResizedDataUrl(file: File, size = 512): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("no_canvas_ctx"));
+      ctx.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.8));
+    };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
+
 function DiseaseDetection() {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const camRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [verdict, setVerdict] = useState<EnsembleVerdict | null>(null);
   const [treatment, setTreatment] = useState<Treatment | null>(null);
+  const [camOpen, setCamOpen] = useState(false);
 
-  const handleFile = (f: File | undefined) => {
-    if (!f) return;
-    const r = new FileReader();
-    r.onload = () => { setPreview(r.result as string); setVerdict(null); setTreatment(null); };
-    r.readAsDataURL(f);
+  const handleUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) await loadFile(file);
+    };
+    input.click();
+  };
+
+  const handleCamera = async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      handleUpload();
+      return;
+    }
+    try {
+      // probe permission by opening modal which will request stream
+      setCamOpen(true);
+    } catch {
+      handleUpload();
+    }
+  };
+
+  const loadFile = async (file: File) => {
+    try {
+      const dataUrl = await fileToResizedDataUrl(file, 512);
+      console.log("Image base64 length:", dataUrl.split(",")[1].length);
+      setPreview(dataUrl);
+      setVerdict(null);
+      setTreatment(null);
+    } catch (e) {
+      console.error("loadFile failed", e);
+    }
   };
 
   const scan = async () => {
@@ -47,31 +94,21 @@ function DiseaseDetection() {
     setLoading(true);
     try {
       const v = await runEnsemble(preview);
+      console.log("Ensemble verdict:", v);
       setVerdict(v);
-      // history
       const hist = (getData<HistoryItem[]>("farmsmart_disease_history") ?? []) as HistoryItem[];
       const item: HistoryItem = {
         id: crypto.randomUUID(),
         date: Date.now(),
-        imageThumb: preview.slice(0, 200000), // truncate
+        imageThumb: preview.slice(0, 200000),
         cropType: v.cropType,
         diseaseName: v.diseaseNameFormatted,
         severity: v.severity,
         confidence: v.confidence,
       };
       saveData("farmsmart_disease_history", [item, ...hist].slice(0, 5));
-      // treatment
       const t = await getTreatment(v.label, v.severity);
       setTreatment(t);
-      // 7-day reminder
-      try {
-        if ("Notification" in window && Notification.permission === "default") {
-          await Notification.requestPermission();
-        }
-        const reminders = (getData<any[]>("farmsmart_reminders") ?? []) as any[];
-        reminders.push({ id: item.id, due: Date.now() + 7 * 24 * 60 * 60 * 1000, disease: v.diseaseNameFormatted, crop: v.cropType, done: false });
-        saveData("farmsmart_reminders", reminders);
-      } catch { /* ignore */ }
     } finally {
       setLoading(false);
     }
@@ -116,15 +153,13 @@ function DiseaseDetection() {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => camRef.current?.click()} className="min-touch gradient-primary text-primary-foreground rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md">
+          <button type="button" onClick={handleCamera} className="min-touch gradient-primary text-primary-foreground rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md active:scale-95 transition">
             <Camera className="w-5 h-5" /> कैमरा
           </button>
-          <button onClick={() => fileRef.current?.click()} className="min-touch bg-secondary rounded-xl font-semibold flex items-center justify-center gap-2">
+          <button type="button" onClick={handleUpload} className="min-touch bg-secondary rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-95 transition">
             <Upload className="w-5 h-5" /> अपलोड
           </button>
         </div>
-        <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
-        <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
 
         {preview && !verdict && (
           <button onClick={scan} disabled={loading} className="mt-3 w-full min-touch bg-accent text-accent-foreground rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-60">
@@ -146,6 +181,84 @@ function DiseaseDetection() {
           </button>
         </div>
       )}
+
+      {camOpen && (
+        <CameraModal
+          onClose={() => setCamOpen(false)}
+          onCapture={async (file) => {
+            setCamOpen(false);
+            await loadFile(file);
+          }}
+          onDeny={() => {
+            setCamOpen(false);
+            handleUpload();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CameraModal({ onClose, onCapture, onDeny }: { onClose: () => void; onCapture: (f: File) => void; onDeny: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
+        }
+      } catch (e) {
+        console.error("camera denied", e);
+        setErr("Camera denied");
+        setTimeout(onDeny, 600);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const capture = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = v.videoWidth || 512;
+    canvas.height = v.videoHeight || 512;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      onCapture(new File([blob], `leaf_${Date.now()}.jpg`, { type: "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+      <div className="flex justify-between items-center p-4 text-white">
+        <span className="font-bold">पत्ती की फोटो लें</span>
+        <button onClick={onClose}><X className="w-6 h-6" /></button>
+      </div>
+      <div className="flex-1 flex items-center justify-center overflow-hidden">
+        {err ? (
+          <p className="text-white">{err} — opening file picker...</p>
+        ) : (
+          <video ref={videoRef} playsInline muted className="max-h-full max-w-full object-contain" />
+        )}
+      </div>
+      <div className="p-6 flex justify-center">
+        <button onClick={capture} className="w-20 h-20 rounded-full bg-white border-4 border-primary active:scale-95 transition" />
+      </div>
     </div>
   );
 }

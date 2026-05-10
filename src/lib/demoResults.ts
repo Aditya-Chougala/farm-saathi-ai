@@ -95,17 +95,26 @@ export const DEMO_CROPS: DemoCrop[] = [
   },
 ];
 
-export const MANDI_PRICES = [
-  { crop: "Tomato", hi: "टमाटर", price: 22, trend: "up" as const },
-  { crop: "Onion", hi: "प्याज", price: 18, trend: "stable" as const },
-  { crop: "Potato", hi: "आलू", price: 15, trend: "down" as const },
-  { crop: "Wheat", hi: "गेहूं", price: 24, trend: "stable" as const },
-  { crop: "Rice", hi: "चावल", price: 35, trend: "up" as const },
-  { crop: "Cotton", hi: "कपास", price: 65, trend: "up" as const },
-  { crop: "Sugarcane", hi: "गन्ना", price: 3.5, trend: "stable" as const },
-  { crop: "Maize", hi: "मक्का", price: 20, trend: "down" as const },
-  { crop: "Soybean", hi: "सोयाबीन", price: 45, trend: "up" as const },
-  { crop: "Groundnut", hi: "मूंगफली", price: 55, trend: "stable" as const },
+export interface MandiPrice {
+  crop: string;
+  hi: string;
+  price: number;
+  unit: "kg" | "quintal";
+  trend: "up" | "down" | "stable";
+  change: string;
+}
+
+export const MANDI_PRICES: MandiPrice[] = [
+  { crop: "Tomato", hi: "टमाटर", price: 22, unit: "kg", trend: "up", change: "+₹4" },
+  { crop: "Onion", hi: "प्याज", price: 18, unit: "kg", trend: "stable", change: "→" },
+  { crop: "Potato", hi: "आलू", price: 15, unit: "kg", trend: "down", change: "-₹2" },
+  { crop: "Wheat", hi: "गेहूं", price: 2425, unit: "quintal", trend: "stable", change: "→" },
+  { crop: "Rice", hi: "धान", price: 2800, unit: "quintal", trend: "up", change: "+₹100" },
+  { crop: "Cotton", hi: "कपास", price: 6500, unit: "quintal", trend: "up", change: "+₹200" },
+  { crop: "Maize", hi: "मक्का", price: 2100, unit: "quintal", trend: "down", change: "-₹50" },
+  { crop: "Soybean", hi: "सोयाबीन", price: 4500, unit: "quintal", trend: "up", change: "+₹150" },
+  { crop: "Groundnut", hi: "मूंगफली", price: 5500, unit: "quintal", trend: "stable", change: "→" },
+  { crop: "Sugarcane", hi: "गन्ना", price: 350, unit: "quintal", trend: "stable", change: "→" },
 ];
 
 export const QUOTES = [

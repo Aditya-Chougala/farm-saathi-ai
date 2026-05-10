@@ -39,25 +39,33 @@ function MarketPage() {
 }
 
 function MandiTab() {
-  const trendIcon = { up: <TrendingUp className="w-4 h-4 text-success" />, down: <TrendingDown className="w-4 h-4 text-destructive" />, stable: <Minus className="w-4 h-4 text-muted-foreground" /> };
+  const trendIcon = {
+    up: <TrendingUp className="w-4 h-4 text-success" />,
+    down: <TrendingDown className="w-4 h-4 text-destructive" />,
+    stable: <Minus className="w-4 h-4 text-muted-foreground" />,
+  };
+  const trendColor = { up: "text-success", down: "text-destructive", stable: "text-muted-foreground" } as const;
   return (
     <div className="glass-card rounded-2xl p-4">
-      <h2 className="font-bold text-primary mb-3">आज के मंडी भाव</h2>
-      <div className="space-y-1.5">
+      <h2 className="font-bold text-primary mb-3">आज के मंडी भाव • Karnataka</h2>
+      <div className="space-y-1">
         {MANDI_PRICES.map((m) => (
           <div key={m.crop} className="flex items-center justify-between py-2 border-b last:border-0">
             <div>
-              <div className="font-bold">{m.hi}</div>
+              <div className="font-bold text-sm">{m.hi}</div>
               <div className="text-[10px] text-muted-foreground">{m.crop}</div>
             </div>
             <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold ${trendColor[m.trend]}`}>{m.change}</span>
               {trendIcon[m.trend]}
-              <span className="font-extrabold text-primary text-lg">₹{m.price}<span className="text-xs text-muted-foreground">/kg</span></span>
+              <span className="font-extrabold text-primary text-base min-w-[88px] text-right">
+                ₹{m.price.toLocaleString("en-IN")}<span className="text-[10px] text-muted-foreground">/{m.unit}</span>
+              </span>
             </div>
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground mt-3 text-center">7-दिन प्रवृत्ति • स्थानीय मंडी से</p>
+      <p className="text-[10px] text-muted-foreground mt-3 text-center">May 2026 • स्थानीय मंडी अनुमान</p>
     </div>
   );
 }
