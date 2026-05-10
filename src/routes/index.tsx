@@ -18,9 +18,10 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const { lang } = useLang();
   const [weather, setWeather] = useState<Weather | null>(null);
-  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  const [quote, setQuote] = useState<string>(QUOTES[0]);
 
   useEffect(() => {
+    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
     fetchWeather().then(setWeather).catch(() => {});
   }, []);
 
