@@ -51,7 +51,15 @@ export async function runEnsemble(base64DataUrl: string): Promise<EnsembleVerdic
     { name: "groq_vision", ok: groqRes.status === "fulfilled", result: groqRes.status === "fulfilled" ? groqRes.value : undefined, error: groqRes.status === "rejected" ? String(groqRes.reason) : undefined },
   ];
 
-  // Bug fix: if all vision APIs failed but Gemini succeeded, reuse Gemini for groq_vision -5%
+  // Fallback: if Gemini failed but Groq Vision succeeded, reuse Groq result as Gemini -5%
+  if (!sources[1].ok && sources[2].ok && sources[2].result) {
+    sources[1] = {
+      name: "gemini",
+      ok: true,
+      result: { ...sources[2].result, confidence: Math.max(0, sources[2].result.confidence - 0.05) },
+    };
+  }
+  // Reverse fallback: if Groq Vision failed but Gemini succeeded, reuse Gemini as Groq -5%
   if (!sources[2].ok && sources[1].ok && sources[1].result) {
     sources[2] = {
       name: "groq_vision",
