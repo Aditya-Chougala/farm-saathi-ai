@@ -61,7 +61,7 @@ function HomePage() {
           {MANDI_PRICES.slice(0, 5).map((m) => (
             <div key={m.crop} className="flex items-center justify-between text-sm py-1">
               <span className="font-semibold">{m.hi} <span className="text-muted-foreground text-xs">{m.crop}</span></span>
-              <span className="font-bold">₹{m.price}/kg {m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→"}</span>
+              <span className="font-bold">₹{m.price}/{m.unit} {m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→"}</span>
             </div>
           ))}
         </div>
