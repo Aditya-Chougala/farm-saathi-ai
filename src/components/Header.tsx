@@ -1,9 +1,9 @@
-import { Sprout, Languages, WifiOff } from "lucide-react";
-import { useLang } from "@/i18n/LanguageContext";
+import { Sprout, WifiOff } from "lucide-react";
+import { useLang, LANGS, type Lang } from "@/i18n/LanguageContext";
 import { useEffect, useState } from "react";
 
 export function Header() {
-  const { lang, toggle, t } = useLang();
+  const { lang, setLang, t } = useLang();
   const [online, setOnline] = useState(true);
 
   useEffect(() => {
@@ -31,14 +31,18 @@ export function Header() {
             <p className="text-[10px] text-muted-foreground">{t("tagline")}</p>
           </div>
         </div>
-        <button
-          onClick={toggle}
-          className="min-touch px-3 rounded-xl bg-secondary text-secondary-foreground flex items-center gap-2 font-semibold text-sm active:scale-95 transition"
-          aria-label="Toggle language"
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value as Lang)}
+          className="min-touch px-3 rounded-xl bg-secondary text-secondary-foreground font-semibold text-sm active:scale-95 transition border-0 outline-none"
+          aria-label="Select language"
         >
-          <Languages className="w-5 h-5" />
-          {lang === "hi" ? "EN" : "हिं"}
-        </button>
+          {LANGS.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.label}
+            </option>
+          ))}
+        </select>
       </header>
       {!online && (
         <div className="bg-warning/90 text-foreground text-sm px-4 py-2 flex items-center gap-2 font-semibold">
