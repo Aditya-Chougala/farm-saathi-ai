@@ -1,7 +1,7 @@
 import { Camera, Upload, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { geminiVision } from "@/lib/geminiApi";
-import { Bi, useLang } from "@/i18n/LanguageContext";
+import { useLang } from "@/i18n/LanguageContext";
 import { SOIL_TYPES } from "@/lib/demoResults";
 
 export interface SoilAnalysis {
@@ -54,7 +54,6 @@ export function SoilAnalyzer({ onComplete }: Props) {
         imageDataUrl: preview,
       });
     } catch {
-      // fallback demo
       onComplete({
         soilType: "Loamy soil",
         soilTypeHindi: "दोमट मिट्टी",
@@ -70,8 +69,8 @@ export function SoilAnalyzer({ onComplete }: Props) {
   return (
     <div className="space-y-4">
       <div className="glass-card rounded-2xl p-4">
-        <h2 className="font-bold text-lg text-primary mb-1">मिट्टी की फोटो</h2>
-        <p className="text-xs text-muted-foreground mb-4">Take or upload a clear soil photo</p>
+        <h2 className="font-bold text-lg text-primary mb-1">{t("soilPhoto")}</h2>
+        <p className="text-xs text-muted-foreground mb-4">{t("takeOrUpload")}</p>
 
         {preview ? (
           <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3">
@@ -84,17 +83,13 @@ export function SoilAnalyzer({ onComplete }: Props) {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => camRef.current?.click()}
-            className="min-touch gradient-primary text-primary-foreground rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-95 transition shadow-md"
-          >
+          <button onClick={() => camRef.current?.click()}
+            className="min-touch gradient-primary text-primary-foreground rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-95 transition shadow-md">
             <Camera className="w-5 h-5" />
             {t("takePhoto")}
           </button>
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="min-touch bg-secondary text-secondary-foreground rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-95 transition"
-          >
+          <button onClick={() => fileRef.current?.click()}
+            className="min-touch bg-secondary text-secondary-foreground rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-95 transition">
             <Upload className="w-5 h-5" />
             {t("uploadPhoto")}
           </button>
@@ -104,13 +99,10 @@ export function SoilAnalyzer({ onComplete }: Props) {
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
 
         {preview && (
-          <button
-            onClick={analyze}
-            disabled={loading}
-            className="mt-3 w-full min-touch bg-accent text-accent-foreground rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-          >
+          <button onClick={analyze} disabled={loading}
+            className="mt-3 w-full min-touch bg-accent text-accent-foreground rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-            <Bi k="analyzeSoil" />
+            {t("analyzeSoil")}
           </button>
         )}
         {err && <p className="text-destructive text-xs mt-2">{err}</p>}

@@ -71,7 +71,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="hi">
+    <html lang="en">
       <head>
         <HeadContent />
         <style dangerouslySetInnerHTML={{ __html: `:root{--farm-bg-image:url(${farmBg});}` }} />

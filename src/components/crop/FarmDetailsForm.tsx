@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Bi, useLang } from "@/i18n/LanguageContext";
+import { useLang } from "@/i18n/LanguageContext";
+import type { TKey } from "@/i18n/translations";
 
 export interface FarmDetails {
   acres: number;
@@ -9,17 +10,23 @@ export interface FarmDetails {
   experience: string;
 }
 
-const IRRIGATION = [
-  { v: "drip", label: "💧 ड्रिप / Drip" },
-  { v: "flood", label: "🌊 बाढ़ / Flood" },
-  { v: "rainfed", label: "🌧️ वर्षा / Rain-fed" },
-  { v: "sprinkler", label: "💦 स्प्रिंकलर / Sprinkler" },
+const IRRIGATION: Array<{ v: string; k: TKey }> = [
+  { v: "drip", k: "irrigationDrip" },
+  { v: "flood", k: "irrigationFlood" },
+  { v: "rainfed", k: "irrigationRain" },
+  { v: "sprinkler", k: "irrigationSpr" },
 ];
 
-const EXP = [
-  { v: "new", label: "🌱 नया (0-2)" },
-  { v: "exp", label: "🌾 अनुभवी (2-10)" },
-  { v: "expert", label: "👨‍🌾 विशेषज्ञ (10+)" },
+const EXP: Array<{ v: string; k: TKey }> = [
+  { v: "new", k: "expNew" },
+  { v: "exp", k: "expExp" },
+  { v: "expert", k: "expExpert" },
+];
+
+const SEASONS: Array<{ v: string; k: TKey }> = [
+  { v: "kharif", k: "seasonKharif" },
+  { v: "rabi", k: "seasonRabi" },
+  { v: "zaid", k: "seasonZaid" },
 ];
 
 function autoSeason(): string {
@@ -28,12 +35,6 @@ function autoSeason(): string {
   if (m >= 10 || m <= 3) return "rabi";
   return "zaid";
 }
-
-const SEASONS = [
-  { v: "kharif", label: "🌧️ खरीफ / Kharif" },
-  { v: "rabi", label: "❄️ रबी / Rabi" },
-  { v: "zaid", label: "☀️ जायद / Zaid" },
-];
 
 export function FarmDetailsForm({ onSubmit, onBack }: { onSubmit: (d: FarmDetails) => void; onBack: () => void }) {
   const { t } = useLang();
@@ -48,78 +49,53 @@ export function FarmDetailsForm({ onSubmit, onBack }: { onSubmit: (d: FarmDetail
 
   return (
     <div className="glass-card rounded-2xl p-4 space-y-4">
-      <h2 className="font-bold text-lg text-primary">खेत की जानकारी</h2>
+      <h2 className="font-bold text-lg text-primary">{t("farmDetails")}</h2>
 
       <div>
-        <label className="text-sm font-semibold block mb-1"><Bi k="landAcres" /></label>
-        <input
-          type="number"
-          min={0.1}
-          step={0.1}
-          value={form.acres}
+        <label className="text-sm font-semibold block mb-1">{t("landAcres")}</label>
+        <input type="number" min={0.1} step={0.1} value={form.acres}
           onChange={(e) => setForm({ ...form, acres: +e.target.value })}
-          className="w-full min-touch px-4 rounded-xl border bg-background text-lg"
-        />
+          className="w-full min-touch px-4 rounded-xl border bg-background text-lg" />
       </div>
 
       <div>
-        <label className="text-sm font-semibold block mb-1"><Bi k="budget" /></label>
-        <input
-          type="number"
-          min={1000}
-          step={1000}
-          value={form.budget}
+        <label className="text-sm font-semibold block mb-1">{t("budget")}</label>
+        <input type="number" min={1000} step={1000} value={form.budget}
           onChange={(e) => setForm({ ...form, budget: +e.target.value })}
-          className="w-full min-touch px-4 rounded-xl border bg-background text-lg"
-        />
+          className="w-full min-touch px-4 rounded-xl border bg-background text-lg" />
       </div>
 
       <div>
-        <label className="text-sm font-semibold block mb-2"><Bi k="irrigation" /></label>
+        <label className="text-sm font-semibold block mb-2">{t("irrigation")}</label>
         <div className="grid grid-cols-2 gap-2">
           {IRRIGATION.map((o) => (
-            <button
-              key={o.v}
-              onClick={() => setForm({ ...form, irrigation: o.v })}
-              className={`min-touch rounded-xl border-2 px-3 text-sm font-semibold ${
-                form.irrigation === o.v ? "border-primary bg-primary/10" : "border-border bg-background"
-              }`}
-            >
-              {o.label}
+            <button key={o.v} onClick={() => setForm({ ...form, irrigation: o.v })}
+              className={`min-touch rounded-xl border-2 px-3 text-sm font-semibold ${form.irrigation === o.v ? "border-primary bg-primary/10" : "border-border bg-background"}`}>
+              {t(o.k)}
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <label className="text-sm font-semibold block mb-2"><Bi k="season" /></label>
+        <label className="text-sm font-semibold block mb-2">{t("season")}</label>
         <div className="grid grid-cols-3 gap-2">
           {SEASONS.map((o) => (
-            <button
-              key={o.v}
-              onClick={() => setForm({ ...form, season: o.v })}
-              className={`min-touch rounded-xl border-2 px-2 text-xs font-semibold ${
-                form.season === o.v ? "border-primary bg-primary/10" : "border-border bg-background"
-              }`}
-            >
-              {o.label}
+            <button key={o.v} onClick={() => setForm({ ...form, season: o.v })}
+              className={`min-touch rounded-xl border-2 px-2 text-xs font-semibold ${form.season === o.v ? "border-primary bg-primary/10" : "border-border bg-background"}`}>
+              {t(o.k)}
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <label className="text-sm font-semibold block mb-2"><Bi k="experience" /></label>
+        <label className="text-sm font-semibold block mb-2">{t("experience")}</label>
         <div className="grid grid-cols-3 gap-2">
           {EXP.map((o) => (
-            <button
-              key={o.v}
-              onClick={() => setForm({ ...form, experience: o.v })}
-              className={`min-touch rounded-xl border-2 px-2 text-xs font-semibold ${
-                form.experience === o.v ? "border-primary bg-primary/10" : "border-border bg-background"
-              }`}
-            >
-              {o.label}
+            <button key={o.v} onClick={() => setForm({ ...form, experience: o.v })}
+              className={`min-touch rounded-xl border-2 px-2 text-xs font-semibold ${form.experience === o.v ? "border-primary bg-primary/10" : "border-border bg-background"}`}>
+              {t(o.k)}
             </button>
           ))}
         </div>
