@@ -1,38 +1,67 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { translations, type TKey } from "./translations";
 
-export type Lang = "hi" | "en";
+export type Lang = "en" | "hi" | "ta" | "kn" | "bn" | "te" | "mr";
+
+export const LANGS: Array<{ code: Lang; label: string }> = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "हिंदी" },
+  { code: "ta", label: "தமிழ்" },
+  { code: "kn", label: "ಕನ್ನಡ" },
+  { code: "bn", label: "বাংলা" },
+  { code: "te", label: "తెలుగు" },
+  { code: "mr", label: "मराठी" },
+];
+
+const STORAGE_KEY = "language";
 
 interface Ctx {
   lang: Lang;
   setLang: (l: Lang) => void;
   toggle: () => void;
   t: (key: TKey) => string;
-  /** Returns Hindi + English bilingual JSX-friendly object */
-  bi: (key: TKey) => { hi: string; en: string };
+  bi: (key: TKey) => { native: string; en: string };
 }
 
 const LanguageContext = createContext<Ctx | null>(null);
 
+function readStored(): Lang {
+  if (typeof window === "undefined") return "en";
+  const v = localStorage.getItem(STORAGE_KEY);
+  if (v && LANGS.some((l) => l.code === v)) return v as Lang;
+  return "en";
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("hi");
+  const [lang, setLangState] = useState<Lang>("en");
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem("farmsmart_lang") as Lang | null;
-    if (stored === "hi" || stored === "en") setLangState(stored);
+    const saved = readStored();
+    if (saved) setLangState(saved);
   }, []);
 
   const setLang = (l: Lang) => {
     setLangState(l);
-    if (typeof window !== "undefined") localStorage.setItem("farmsmart_lang", l);
+    if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, l);
   };
 
-  const t = (key: TKey) => translations[key]?.[lang] ?? String(key);
-  const bi = (key: TKey) => translations[key] ?? { hi: String(key), en: String(key) };
+  const t = (key: TKey) => {
+    const entry = translations[key] as Record<string, string> | undefined;
+    if (!entry) return String(key);
+    return entry[lang] ?? entry.en ?? entry.hi ?? String(key);
+  };
+
+  const bi = (key: TKey) => {
+    const entry = translations[key] as Record<string, string> | undefined;
+    const en = entry?.en ?? String(key);
+    const native = entry?.[lang] ?? en;
+    return { native, en };
+  };
+
+  const toggle = () => setLang(lang === "en" ? "hi" : "en");
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggle: () => setLang(lang === "hi" ? "en" : "hi"), t, bi }}>
+    <LanguageContext.Provider value={{ lang, setLang, toggle, t, bi }}>
       {children}
     </LanguageContext.Provider>
   );
@@ -44,14 +73,15 @@ export function useLang() {
   return ctx;
 }
 
-/** Renders Hindi label prominently with English smaller below */
+/** Renders selected language label with English smaller below (when different) */
 export function Bi({ k, className = "" }: { k: TKey; className?: string }) {
-  const { bi } = useLang();
+  const { bi, lang } = useLang();
   const v = bi(k);
+  const showEn = lang !== "en" && v.native !== v.en;
   return (
     <span className={`flex flex-col leading-tight ${className}`}>
-      <span className="text-bilingual-hi">{v.hi}</span>
-      <span className="text-[10px] opacity-75 font-normal">{v.en}</span>
+      <span className="text-bilingual-hi">{v.native}</span>
+      {showEn && <span className="text-[10px] opacity-75 font-normal">{v.en}</span>}
     </span>
   );
 }
