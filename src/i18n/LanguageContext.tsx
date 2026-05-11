@@ -18,9 +18,7 @@ const STORAGE_KEY = "language";
 interface Ctx {
   lang: Lang;
   setLang: (l: Lang) => void;
-  toggle: () => void;
-  t: (key: TKey) => string;
-  bi: (key: TKey) => { native: string; en: string };
+  t: (key: TKey, vars?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<Ctx | null>(null);
@@ -32,36 +30,40 @@ function readStored(): Lang {
   return "en";
 }
 
+function interpolate(s: string, vars?: Record<string, string | number>) {
+  if (!vars) return s;
+  return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? String(vars[k]) : `{${k}}`));
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
+  // Default to English on first render to match SSR; hydrate stored lang in effect.
   const [lang, setLangState] = useState<Lang>("en");
 
   useEffect(() => {
     const saved = readStored();
-    if (saved) setLangState(saved);
+    if (saved !== lang) setLangState(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setLang = (l: Lang) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, l);
+      // Hard reload — guarantees a single-language render and fresh translation cache.
+      window.location.reload();
+      return;
+    }
     setLangState(l);
-    if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, l);
   };
 
-  const t = (key: TKey) => {
+  const t = (key: TKey, vars?: Record<string, string | number>) => {
     const entry = translations[key] as Record<string, string> | undefined;
     if (!entry) return String(key);
-    return entry[lang] ?? entry.en ?? entry.hi ?? String(key);
+    const raw = entry[lang] ?? entry.en ?? String(key);
+    return interpolate(raw, vars);
   };
-
-  const bi = (key: TKey) => {
-    const entry = translations[key] as Record<string, string> | undefined;
-    const en = entry?.en ?? String(key);
-    const native = entry?.[lang] ?? en;
-    return { native, en };
-  };
-
-  const toggle = () => setLang(lang === "en" ? "hi" : "en");
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggle, t, bi }}>
+    <LanguageContext.Provider value={{ lang, setLang, t }}>
       {children}
     </LanguageContext.Provider>
   );
@@ -73,15 +75,8 @@ export function useLang() {
   return ctx;
 }
 
-/** Renders selected language label with English smaller below (when different) */
+/** Renders a single translated label — never mixes languages. */
 export function Bi({ k, className = "" }: { k: TKey; className?: string }) {
-  const { bi, lang } = useLang();
-  const v = bi(k);
-  const showEn = lang !== "en" && v.native !== v.en;
-  return (
-    <span className={`flex flex-col leading-tight ${className}`}>
-      <span className="text-bilingual-hi">{v.native}</span>
-      {showEn && <span className="text-[10px] opacity-75 font-normal">{v.en}</span>}
-    </span>
-  );
+  const { t } = useLang();
+  return <span className={className}>{t(k)}</span>;
 }
