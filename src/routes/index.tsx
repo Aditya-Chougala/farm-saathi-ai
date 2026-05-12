@@ -82,7 +82,7 @@ function HomePage() {
           <Link to="/market" className="text-xs text-accent-foreground font-semibold">{t("viewAll")}</Link>
         </div>
         <div className="space-y-1.5">
-          {MANDI_PRICES.slice(0, 5).map((m) => (
+          {prices.slice(0, 5).map((m) => (
             <div key={m.crop} className="flex items-center justify-between text-sm py-1">
               <span className="font-semibold">{m.names[lang]}</span>
               <span className="font-bold">₹{m.price}/{m.unit} {m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→"}</span>
