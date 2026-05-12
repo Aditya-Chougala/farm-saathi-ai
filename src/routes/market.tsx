@@ -45,6 +45,8 @@ function MarketPage() {
 
 function MandiTab() {
   const { t, lang } = useLang();
+  const [prices, setPrices] = useState<MandiPrice[]>([]);
+  useEffect(() => { setPrices(getLiveMandiPrices()); }, []);
   const trendIcon = {
     up: <TrendingUp className="w-4 h-4 text-success" />,
     down: <TrendingDown className="w-4 h-4 text-destructive" />,
@@ -55,7 +57,7 @@ function MandiTab() {
     <div className="glass-card rounded-2xl p-4">
       <h2 className="font-bold text-primary mb-3">{t("mandiToday")} • Karnataka</h2>
       <div className="space-y-1">
-        {MANDI_PRICES.map((m) => (
+        {prices.map((m) => (
           <div key={m.crop} className="flex items-center justify-between py-2 border-b last:border-0">
             <div>
               <div className="font-bold text-sm">{m.names[lang]}</div>
