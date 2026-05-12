@@ -31,9 +31,11 @@ export async function getCoords(): Promise<{ lat: number; lon: number }> {
   });
 }
 
-export async function fetchWeather(): Promise<Weather> {
-  const cached = cacheGet<Weather>("farmsmart_weather");
-  if (cached) return cached;
+export async function fetchWeather(force = false): Promise<Weather> {
+  if (!force) {
+    const cached = cacheGet<Weather>("farmsmart_weather");
+    if (cached) return cached;
+  }
   const { lat, lon } = await getCoords();
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,weathercode&timezone=Asia/Kolkata&t=${Date.now()}`;
