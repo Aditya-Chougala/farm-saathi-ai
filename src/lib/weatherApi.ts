@@ -55,7 +55,8 @@ export async function fetchWeather(force = false): Promise<Weather> {
     };
     cacheSet("farmsmart_weather", w, 30 * 60 * 1000);
     return w;
-  } catch {
+  } catch (e) {
+    console.error("Weather fetch failed:", e);
     return { temperature: 28, humidity: 60, rain: 0, windSpeed: 5, lat, lon, fetchedAt: Date.now() };
   }
 }
