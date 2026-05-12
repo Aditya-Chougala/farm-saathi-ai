@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp } from "lucide-react";
+import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp, RefreshCw } from "lucide-react";
 import { fetchWeather, type Weather } from "@/lib/weatherApi";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
