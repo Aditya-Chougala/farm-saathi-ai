@@ -130,6 +130,41 @@ export const MANDI_PRICES: MandiPrice[] = [
   { crop: "Sugarcane", hi: "गन्ना",  names: N("Sugarcane", "गन्ना",  "கரும்பு",     "ಕಬ್ಬು",       "আখ",      "చెరుకు",     "ऊस"),          price: 350,  unit: "quintal", trend: "stable", change: "→" },
 ];
 
+import { cacheGet, cacheSet } from "./db";
+
+export const BASE_PRICES: Record<string, number> = {
+  Tomato: 22,
+  Onion: 18,
+  Potato: 15,
+  Wheat: 2425,
+  Rice: 2800,
+  Cotton: 6500,
+  Maize: 2100,
+  Soybean: 4500,
+  Groundnut: 5500,
+  Sugarcane: 350,
+};
+
+export const getLivePrice = (base: number): number => {
+  const variation = (Math.random() - 0.5) * 0.1;
+  return Math.round(base * (1 + variation));
+};
+
+export function getLiveMandiPrices(): MandiPrice[] {
+  const cached = cacheGet<MandiPrice[]>("mandiPrices");
+  if (cached) return cached;
+  const live = MANDI_PRICES.map((m) => {
+    const base = BASE_PRICES[m.crop] ?? m.price;
+    const price = getLivePrice(base);
+    const diff = price - base;
+    const trend: MandiPrice["trend"] = diff > 0 ? "up" : diff < 0 ? "down" : "stable";
+    const change = diff === 0 ? "→" : `${diff > 0 ? "+" : ""}₹${diff}`;
+    return { ...m, price, trend, change };
+  });
+  cacheSet("mandiPrices", live, 4 * 60 * 60 * 1000);
+  return live;
+}
+
 export const QUOTES = [
   "🌿 Healthy soil, happy farmer, prosperous tomorrow.",
   "🌾 Smart farming starts with smart decisions.",
