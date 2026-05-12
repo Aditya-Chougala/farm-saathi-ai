@@ -25,6 +25,7 @@ function HomePage() {
 
   useEffect(() => {
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+    setPrices(getLiveMandiPrices());
     fetchWeather().then(setWeather).catch(() => {});
   }, []);
 
