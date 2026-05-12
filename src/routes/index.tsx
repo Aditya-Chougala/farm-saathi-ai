@@ -21,6 +21,7 @@ function HomePage() {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
+  const [prices, setPrices] = useState<MandiPrice[]>([]);
 
   useEffect(() => {
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
