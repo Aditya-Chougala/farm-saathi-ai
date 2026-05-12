@@ -1,6 +1,8 @@
 // Open-Meteo weather (no API key)
 import { cacheGet, cacheSet } from "./db";
 
+const GPS_CACHE_KEY = "farmsmart_gps";
+
 export interface Weather {
   temperature: number;
   humidity: number;
@@ -14,17 +16,33 @@ export interface Weather {
 export const FALLBACK_COORDS = { lat: 20.5937, lon: 78.9629 };
 
 export async function getCoords(): Promise<{ lat: number; lon: number }> {
-  if (typeof navigator === "undefined" || !navigator.geolocation) return FALLBACK_COORDS;
+  const cached = cacheGet<{ lat: number; lon: number; timestamp: number }>(GPS_CACHE_KEY);
+  if (cached) {
+    console.log("GPS coords (cached):", cached.lat, cached.lon);
+    return { lat: cached.lat, lon: cached.lon };
+  }
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    console.log("GPS coords (fallback, no geolocation):", FALLBACK_COORDS.lat, FALLBACK_COORDS.lon);
+    return FALLBACK_COORDS;
+  }
   return new Promise((resolve) => {
-    const t = setTimeout(() => resolve(FALLBACK_COORDS), 4000);
+    const done = (lat: number, lon: number, src: string) => {
+      console.log(`GPS coords (${src}):`, lat, lon);
+      if (src === "gps") {
+        cacheSet(GPS_CACHE_KEY, { lat, lon, timestamp: Date.now() }, 60 * 60 * 1000);
+      }
+      resolve({ lat, lon });
+    };
+    const t = setTimeout(() => done(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon, "fallback-timeout"), 4000);
     navigator.geolocation.getCurrentPosition(
       (p) => {
         clearTimeout(t);
-        resolve({ lat: p.coords.latitude, lon: p.coords.longitude });
+        done(p.coords.latitude, p.coords.longitude, "gps");
       },
-      () => {
+      (err) => {
         clearTimeout(t);
-        resolve(FALLBACK_COORDS);
+        console.warn("GPS denied/error:", err?.message);
+        done(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon, "fallback-denied");
       },
       { timeout: 4000, enableHighAccuracy: false },
     );
