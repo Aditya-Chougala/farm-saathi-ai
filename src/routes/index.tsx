@@ -19,6 +19,7 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const { t, lang } = useLang();
   const [weather, setWeather] = useState<Weather | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
 
   useEffect(() => {
@@ -26,10 +27,32 @@ function HomePage() {
     fetchWeather().then(setWeather).catch(() => {});
   }, []);
 
+  const refreshWeather = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      const w = await fetchWeather(true);
+      setWeather(w);
+    } catch {
+      /* ignore */
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <section className="glass-card rounded-3xl p-5 gradient-warm text-accent-foreground relative overflow-hidden">
         <div className="absolute -top-6 -right-6 text-9xl opacity-20">☀️</div>
+        <button
+          type="button"
+          onClick={refreshWeather}
+          aria-label="Refresh weather"
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/30 backdrop-blur active:scale-95 transition disabled:opacity-60"
+          disabled={refreshing}
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+        </button>
         <div className="relative">
           <p className="text-xs font-semibold opacity-80">{t("weatherToday")}</p>
           <div className="flex items-end gap-3 mt-1">
