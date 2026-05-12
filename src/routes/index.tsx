@@ -4,7 +4,7 @@ import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp, Refres
 import { fetchWeather, type Weather } from "@/lib/weatherApi";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
-import { QUOTES, MANDI_PRICES } from "@/lib/demoResults";
+import { QUOTES, getLiveMandiPrices, type MandiPrice } from "@/lib/demoResults";
 
 export const Route = createFileRoute("/")({
   head: () => ({
