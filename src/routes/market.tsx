@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Phone, MapPin, ExternalLink, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { MANDI_PRICES } from "@/lib/demoResults";
+import { getLiveMandiPrices, type MandiPrice } from "@/lib/demoResults";
 import { getData, saveData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
