@@ -4,7 +4,7 @@ import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp, Refres
 import { fetchWeather, type Weather } from "@/lib/weatherApi";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
-import { QUOTES, MANDI_PRICES } from "@/lib/demoResults";
+import { QUOTES, getLiveMandiPrices, type MandiPrice } from "@/lib/demoResults";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,9 +21,11 @@ function HomePage() {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
+  const [prices, setPrices] = useState<MandiPrice[]>([]);
 
   useEffect(() => {
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+    setPrices(getLiveMandiPrices());
     fetchWeather().then(setWeather).catch(() => {});
   }, []);
 
@@ -80,7 +82,7 @@ function HomePage() {
           <Link to="/market" className="text-xs text-accent-foreground font-semibold">{t("viewAll")}</Link>
         </div>
         <div className="space-y-1.5">
-          {MANDI_PRICES.slice(0, 5).map((m) => (
+          {prices.slice(0, 5).map((m) => (
             <div key={m.crop} className="flex items-center justify-between text-sm py-1">
               <span className="font-semibold">{m.names[lang]}</span>
               <span className="font-bold">₹{m.price}/{m.unit} {m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→"}</span>
