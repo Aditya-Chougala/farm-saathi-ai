@@ -1,6 +1,8 @@
 // Open-Meteo weather (no API key)
 import { cacheGet, cacheSet } from "./db";
 
+const GPS_CACHE_KEY = "farmsmart_gps";
+
 export interface Weather {
   temperature: number;
   humidity: number;
