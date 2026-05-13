@@ -14,6 +14,7 @@ import { Route as MarketRouteImport } from './routes/market'
 import { Route as DiseaseRouteImport } from './routes/disease'
 import { Route as CropRouteImport } from './routes/crop'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiMandiRouteImport } from './routes/api/mandi'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMandiRoute = ApiMandiRouteImport.update({
+  id: '/api/mandi',
+  path: '/api/mandi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/disease': typeof DiseaseRoute
   '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
+  '/api/mandi': typeof ApiMandiRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/disease': typeof DiseaseRoute
   '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
+  '/api/mandi': typeof ApiMandiRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,21 @@ export interface FileRoutesById {
   '/disease': typeof DiseaseRoute
   '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
+  '/api/mandi': typeof ApiMandiRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/crop' | '/disease' | '/market' | '/profile'
+  fullPaths: '/' | '/crop' | '/disease' | '/market' | '/profile' | '/api/mandi'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/crop' | '/disease' | '/market' | '/profile'
-  id: '__root__' | '/' | '/crop' | '/disease' | '/market' | '/profile'
+  to: '/' | '/crop' | '/disease' | '/market' | '/profile' | '/api/mandi'
+  id:
+    | '__root__'
+    | '/'
+    | '/crop'
+    | '/disease'
+    | '/market'
+    | '/profile'
+    | '/api/mandi'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +93,7 @@ export interface RootRouteChildren {
   DiseaseRoute: typeof DiseaseRoute
   MarketRoute: typeof MarketRoute
   ProfileRoute: typeof ProfileRoute
+  ApiMandiRoute: typeof ApiMandiRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mandi': {
+      id: '/api/mandi'
+      path: '/api/mandi'
+      fullPath: '/api/mandi'
+      preLoaderRoute: typeof ApiMandiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +149,7 @@ const rootRouteChildren: RootRouteChildren = {
   DiseaseRoute: DiseaseRoute,
   MarketRoute: MarketRoute,
   ProfileRoute: ProfileRoute,
+  ApiMandiRoute: ApiMandiRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
