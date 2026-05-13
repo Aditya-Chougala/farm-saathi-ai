@@ -73,38 +73,48 @@ function MandiTab() {
     <div className="glass-card rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <h2 className="font-bold text-primary">{t("mandiToday")} • {meta?.location ?? "Karnataka"}</h2>
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+        <h2 className="font-bold text-primary">{t("mandiToday")} {meta?.location ? `• ${meta.location}` : ""}</h2>
         {meta?.live && (
           <span className="text-[10px] font-bold bg-success/15 text-success px-2 py-0.5 rounded-full">
-            Agmarknet लाइव डेटा
+            📊 Agmarknet लाइव डेटा
           </span>
         )}
       </div>
-      <div className="space-y-1">
-        {prices.map((m, i) => (
-          <div key={`${m.crop}-${i}`} className="flex items-center justify-between py-2 border-b last:border-0">
-            <div>
-              <div className="font-bold text-sm">{m.names[lang]}</div>
-              {"market" in m && m.market ? (
-                <div className="text-[10px] text-muted-foreground">{m.market}</div>
-              ) : lang !== "en" ? (
-                <div className="text-[10px] text-muted-foreground">{m.crop}</div>
-              ) : null}
+      {loading ? (
+        <div className="py-8 text-center text-sm text-muted-foreground">Loading mandi prices…</div>
+      ) : error || prices.length === 0 ? (
+        <div className="py-8 text-center text-sm text-muted-foreground">
+          Mandi data unavailable right now. Please try again later.
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {prices.map((m, i) => (
+            <div key={`${m.crop}-${i}`} className="flex items-center justify-between py-2 border-b last:border-0">
+              <div>
+                <div className="font-bold text-sm">{m.names[lang]}</div>
+                {m.market ? (
+                  <div className="text-[10px] text-muted-foreground">
+                    {m.market}{m.arrivalDate ? ` • ${m.arrivalDate}` : ""}
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-semibold ${trendColor[m.trend]}`}>{m.change}</span>
+                {trendIcon[m.trend]}
+                <span className="font-extrabold text-primary text-base min-w-[88px] text-right">
+                  ₹{m.price.toLocaleString("en-IN")}<span className="text-[10px] text-muted-foreground">/{m.unit}</span>
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold ${trendColor[m.trend]}`}>{m.change}</span>
-              {trendIcon[m.trend]}
-              <span className="font-extrabold text-primary text-base min-w-[88px] text-right">
-                ₹{m.price.toLocaleString("en-IN")}<span className="text-[10px] text-muted-foreground">/{m.unit}</span>
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="text-[10px] text-muted-foreground mt-3 text-center">
-        {meta?.live
-          ? `${meta.stale ? "Offline • " : ""}Last updated ${timeAgo(meta.updatedAt)}`
-          : `May 2026 • ${t("mandiSub")}`}
-      </p>
+          ))}
+        </div>
+      )}
+      {meta?.live && (
+        <p className="text-[10px] text-muted-foreground mt-3 text-center">
+          {meta.stale ? "Offline • " : ""}Last updated {timeAgo(meta.updatedAt)}
+        </p>
+      )}
     </div>
   );
 }
