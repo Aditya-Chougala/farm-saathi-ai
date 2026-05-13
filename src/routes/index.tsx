@@ -4,7 +4,7 @@ import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp, Refres
 import { fetchHomeData, weatherEmoji, describeWeatherCode, type HomeData } from "@/lib/weatherApi";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
-import { QUOTES, getLiveMandiPrices, type MandiPrice } from "@/lib/demoResults";
+import { QUOTES } from "@/lib/demoResults";
 import { fetchRealMandiPrices, type RealMandiPrice } from "@/lib/agmarknetApi";
 
 export const Route = createFileRoute("/")({
@@ -41,7 +41,7 @@ function HomePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
-  const [prices, setPrices] = useState<(MandiPrice | RealMandiPrice)[]>([]);
+  const [prices, setPrices] = useState<RealMandiPrice[]>([]);
   const [liveBadge, setLiveBadge] = useState(false);
 
   const load = async (force = false) => {
@@ -55,7 +55,6 @@ function HomePage() {
 
   useEffect(() => {
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-    setPrices(getLiveMandiPrices());
     load().finally(() => setLoading(false));
     fetchRealMandiPrices().then((res) => {
       if (res && res.prices.length) {
@@ -166,14 +165,18 @@ function HomePage() {
             <h3 className="font-bold text-primary">{t("mandiPrices")}</h3>
             {liveBadge && (
               <span className="text-[9px] font-bold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
-                Agmarknet लाइव
+                📊 Agmarknet लाइव
               </span>
             )}
           </div>
           <Link to="/market" className="text-xs text-accent-foreground font-semibold">{t("viewAll")}</Link>
         </div>
         <div className="space-y-1.5">
-          {prices.slice(0, 5).map((m, i) => (
+          {prices.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-2 text-center">
+              {loading ? "Loading mandi prices…" : "Mandi data unavailable"}
+            </div>
+          ) : prices.slice(0, 5).map((m, i) => (
             <div key={`${m.crop}-${i}`} className="flex items-center justify-between text-sm py-1">
               <span className="font-semibold">{m.names[lang]}</span>
               <span className="font-bold">₹{m.price}/{m.unit} {m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→"}</span>
