@@ -5,6 +5,7 @@ import { fetchWeather, type Weather } from "@/lib/weatherApi";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
 import { QUOTES, getLiveMandiPrices, type MandiPrice } from "@/lib/demoResults";
+import { fetchRealMandiPrices, type RealMandiPrice } from "@/lib/agmarknetApi";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,12 +22,19 @@ function HomePage() {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
-  const [prices, setPrices] = useState<MandiPrice[]>([]);
+  const [prices, setPrices] = useState<(MandiPrice | RealMandiPrice)[]>([]);
+  const [liveBadge, setLiveBadge] = useState(false);
 
   useEffect(() => {
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
     setPrices(getLiveMandiPrices());
     fetchWeather().then(setWeather).catch(() => {});
+    fetchRealMandiPrices().then((res) => {
+      if (res && res.prices.length) {
+        setPrices(res.prices);
+        setLiveBadge(true);
+      }
+    });
   }, []);
 
   const refreshWeather = async () => {
@@ -78,12 +86,19 @@ function HomePage() {
 
       <section className="glass-card rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-bold text-primary">{t("mandiPrices")}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-bold text-primary">{t("mandiPrices")}</h3>
+            {liveBadge && (
+              <span className="text-[9px] font-bold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
+                Agmarknet लाइव
+              </span>
+            )}
+          </div>
           <Link to="/market" className="text-xs text-accent-foreground font-semibold">{t("viewAll")}</Link>
         </div>
         <div className="space-y-1.5">
-          {prices.slice(0, 5).map((m) => (
-            <div key={m.crop} className="flex items-center justify-between text-sm py-1">
+          {prices.slice(0, 5).map((m, i) => (
+            <div key={`${m.crop}-${i}`} className="flex items-center justify-between text-sm py-1">
               <span className="font-semibold">{m.names[lang]}</span>
               <span className="font-bold">₹{m.price}/{m.unit} {m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→"}</span>
             </div>
