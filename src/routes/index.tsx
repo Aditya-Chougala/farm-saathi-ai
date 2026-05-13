@@ -22,12 +22,19 @@ function HomePage() {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
-  const [prices, setPrices] = useState<MandiPrice[]>([]);
+  const [prices, setPrices] = useState<(MandiPrice | RealMandiPrice)[]>([]);
+  const [liveBadge, setLiveBadge] = useState(false);
 
   useEffect(() => {
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
     setPrices(getLiveMandiPrices());
     fetchWeather().then(setWeather).catch(() => {});
+    fetchRealMandiPrices().then((res) => {
+      if (res && res.prices.length) {
+        setPrices(res.prices);
+        setLiveBadge(true);
+      }
+    });
   }, []);
 
   const refreshWeather = async () => {
