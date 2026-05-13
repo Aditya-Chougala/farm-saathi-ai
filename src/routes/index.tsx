@@ -5,6 +5,7 @@ import { fetchWeather, type Weather } from "@/lib/weatherApi";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
 import { QUOTES, getLiveMandiPrices, type MandiPrice } from "@/lib/demoResults";
+import { fetchRealMandiPrices, type RealMandiPrice } from "@/lib/agmarknetApi";
 
 export const Route = createFileRoute("/")({
   head: () => ({
