@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Phone, MapPin, ExternalLink, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { getLiveMandiPrices, type MandiPrice } from "@/lib/demoResults";
 import { fetchRealMandiPrices, timeAgo, type RealMandiPrice } from "@/lib/agmarknetApi";
 import { getData, saveData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
@@ -46,17 +45,22 @@ function MarketPage() {
 
 function MandiTab() {
   const { t, lang } = useLang();
-  const [prices, setPrices] = useState<(MandiPrice | RealMandiPrice)[]>([]);
+  const [prices, setPrices] = useState<RealMandiPrice[]>([]);
   const [meta, setMeta] = useState<{ live: boolean; updatedAt: number; stale: boolean; location: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    setPrices(getLiveMandiPrices());
-    fetchRealMandiPrices().then((res) => {
-      if (res && res.prices.length) {
-        setPrices(res.prices);
-        setMeta({ live: true, updatedAt: res.updatedAt, stale: res.stale, location: `${res.district}, ${res.state}` });
-      }
-    });
+    fetchRealMandiPrices()
+      .then((res) => {
+        if (res && res.prices.length) {
+          setPrices(res.prices);
+          setMeta({ live: true, updatedAt: res.updatedAt, stale: res.stale, location: `${res.district}, ${res.state}` });
+        } else {
+          setError(true);
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const trendIcon = {
