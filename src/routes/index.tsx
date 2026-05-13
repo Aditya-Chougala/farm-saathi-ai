@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp, RefreshCw } from "lucide-react";
-import { fetchWeather, type Weather } from "@/lib/weatherApi";
+import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp, RefreshCw, MapPin } from "lucide-react";
+import { fetchHomeData, weatherEmoji, describeWeatherCode, type HomeData } from "@/lib/weatherApi";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
 import { QUOTES, getLiveMandiPrices, type MandiPrice } from "@/lib/demoResults";
@@ -17,65 +17,141 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+function timeAgo(ts: number): string {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  return `${h}h ago`;
+}
+
+function formatDay(date: string, idx: number): string {
+  if (idx === 0) return "Today";
+  try {
+    return new Date(date).toLocaleDateString("en-US", { weekday: "short" });
+  } catch {
+    return date.slice(5);
+  }
+}
+
 function HomePage() {
   const { t, lang } = useLang();
-  const [weather, setWeather] = useState<Weather | null>(null);
+  const [home, setHome] = useState<HomeData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
   const [prices, setPrices] = useState<(MandiPrice | RealMandiPrice)[]>([]);
   const [liveBadge, setLiveBadge] = useState(false);
 
+  const load = async (force = false) => {
+    try {
+      const d = await fetchHomeData(force);
+      setHome(d);
+    } catch (e) {
+      console.error("Home data load failed:", e);
+    }
+  };
+
   useEffect(() => {
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
     setPrices(getLiveMandiPrices());
-    fetchWeather().then(setWeather).catch(() => {});
+    load().finally(() => setLoading(false));
     fetchRealMandiPrices().then((res) => {
       if (res && res.prices.length) {
         setPrices(res.prices);
         setLiveBadge(true);
       }
-    });
+    }).catch(() => {});
   }, []);
 
-  const refreshWeather = async () => {
+  const refresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
-    try {
-      const w = await fetchWeather(true);
-      setWeather(w);
-    } catch {
-      /* ignore */
-    } finally {
-      setRefreshing(false);
-    }
+    await load(true);
+    setRefreshing(false);
   };
+
+  const w = home?.weather;
+  const loc = home?.location;
+  const aqi = home?.aqi;
+  const aqiColor = !aqi ? "" : aqi.level === "Good" ? "bg-success/20 text-success" : aqi.level === "Moderate" ? "bg-accent/30 text-accent-foreground" : aqi.level === "Poor" ? "bg-orange-500/20 text-orange-700" : "bg-destructive/20 text-destructive";
 
   return (
     <div className="space-y-4">
       <section className="glass-card rounded-3xl p-5 gradient-warm text-accent-foreground relative overflow-hidden">
-        <div className="absolute -top-6 -right-6 text-9xl opacity-20">☀️</div>
+        <div className="absolute -top-6 -right-6 text-9xl opacity-20">{w ? weatherEmoji(w.weatherCode) : "☀️"}</div>
         <button
           type="button"
-          onClick={refreshWeather}
+          onClick={refresh}
           aria-label="Refresh weather"
           className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/30 backdrop-blur active:scale-95 transition disabled:opacity-60"
-          disabled={refreshing}
+          disabled={refreshing || loading}
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
         </button>
         <div className="relative">
           <p className="text-xs font-semibold opacity-80">{t("weatherToday")}</p>
+          {loc && (
+            <div className="flex items-center gap-1 text-xs mt-0.5 opacity-90">
+              <MapPin className="w-3 h-3" />
+              <span className="font-semibold">{loc.city}{loc.state ? `, ${loc.state}` : ""}</span>
+            </div>
+          )}
           <div className="flex items-end gap-3 mt-1">
-            <div className="text-5xl font-extrabold">{weather ? Math.round(weather.temperature) : "--"}°</div>
-            <div className="text-sm pb-1.5 opacity-90">{t("temperature")}</div>
+            <div className="text-5xl font-extrabold">
+              {loading && !w ? "…" : w ? `${Math.round(w.temperature)}°` : "—"}
+            </div>
+            <div className="text-sm pb-1.5 opacity-90">
+              {w ? describeWeatherCode(w.weatherCode) : t("temperature")}
+              {w ? ` · feels ${Math.round(w.feelsLike)}°` : ""}
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-            <div className="bg-white/30 rounded-lg p-2 backdrop-blur"><Droplets className="w-4 h-4 mb-1" />{weather?.humidity ?? "--"}%</div>
-            <div className="bg-white/30 rounded-lg p-2 backdrop-blur"><Cloud className="w-4 h-4 mb-1" />{weather?.rain ?? 0}mm</div>
-            <div className="bg-white/30 rounded-lg p-2 backdrop-blur"><Wind className="w-4 h-4 mb-1" />{weather?.windSpeed ?? "--"}km/h</div>
+            <div className="bg-white/30 rounded-lg p-2 backdrop-blur">
+              <Droplets className="w-4 h-4 mb-1" />
+              {w ? `${Math.round(w.humidity)}%` : "—"}
+            </div>
+            <div className="bg-white/30 rounded-lg p-2 backdrop-blur">
+              <Cloud className="w-4 h-4 mb-1" />
+              {w ? `${w.rain.toFixed(1)} mm` : "—"}
+            </div>
+            <div className="bg-white/30 rounded-lg p-2 backdrop-blur">
+              <Wind className="w-4 h-4 mb-1" />
+              {w ? `${Math.round(w.windSpeed)} km/h` : "—"}
+            </div>
+          </div>
+          {w && w.daily.length > 0 && (
+            <div className="mt-3 -mx-1 overflow-x-auto">
+              <div className="flex gap-1.5 px-1 min-w-max">
+                {w.daily.slice(0, 7).map((d, i) => (
+                  <div key={d.date} className="bg-white/30 backdrop-blur rounded-lg px-2 py-1.5 text-center min-w-[52px]">
+                    <div className="text-[10px] font-semibold opacity-80">{formatDay(d.date, i)}</div>
+                    <div className="text-base leading-none my-0.5">{weatherEmoji(d.code)}</div>
+                    <div className="text-[10px] font-bold">{Math.round(d.tMax)}°/{Math.round(d.tMin)}°</div>
+                    {d.precipProb > 0 && <div className="text-[9px] opacity-80">💧{d.precipProb}%</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mt-2 flex items-center justify-between text-[10px] opacity-80">
+            <span>{home ? `Updated ${timeAgo(home.fetchedAt)}` : loading ? "Loading…" : ""}</span>
           </div>
         </div>
       </section>
+
+      {aqi && (
+        <section className="glass-card rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-bold text-primary text-sm">Air Quality (AQI)</h3>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${aqiColor}`}>
+              {aqi.aqi} · {aqi.level}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">{aqi.advice}</p>
+        </section>
+      )}
 
       <section className="grid grid-cols-2 gap-3">
         <FeatureTile to="/crop" icon={Sprout} k="cropSuggest" gradient="gradient-primary" />
