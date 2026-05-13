@@ -86,7 +86,14 @@ function HomePage() {
 
       <section className="glass-card rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-bold text-primary">{t("mandiPrices")}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-bold text-primary">{t("mandiPrices")}</h3>
+            {liveBadge && (
+              <span className="text-[9px] font-bold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
+                Agmarknet लाइव
+              </span>
+            )}
+          </div>
           <Link to="/market" className="text-xs text-accent-foreground font-semibold">{t("viewAll")}</Link>
         </div>
         <div className="space-y-1.5">
