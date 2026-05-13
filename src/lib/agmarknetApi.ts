@@ -1,14 +1,11 @@
-// Real Agmarknet mandi prices via Data.gov.in
+// Real Agmarknet mandi prices via Data.gov.in (server-proxied to bypass CORS + rate limits)
 import { cacheGet, cacheSet, getData, saveData } from "./db";
 import { getCoords } from "./weatherApi";
 import type { MandiPrice } from "./demoResults";
-import { MANDI_PRICES } from "./demoResults";
 import type { Lang } from "@/i18n/LanguageContext";
 
-const API_KEY = "579b464db66ec23bdd000001cdd3946e44ce4aab56540cef3a8e4f19";
-const RESOURCE = "9ef84268-d588-465a-a308-a864a43d0070";
 const CACHE_KEY = "mandiPricesReal";
-const RAW_KEY = "mandiPricesRealRaw"; // {prices, updatedAt} — kept past TTL for fallback
+const RAW_KEY = "mandiPricesRealRaw";
 const TTL_MS = 6 * 60 * 60 * 1000;
 
 const VEGETABLES = new Set([
@@ -32,19 +29,10 @@ export interface RealMandiResult {
 }
 
 interface ApiRecord {
-  state?: string;
-  district?: string;
-  market?: string;
-  commodity?: string;
-  variety?: string;
-  arrival_date?: string;
-  modal_price?: string;
-  Modal_Price?: string;
-  Commodity?: string;
-  Market?: string;
-  Arrival_Date?: string;
-  State?: string;
-  District?: string;
+  state?: string; district?: string; market?: string; commodity?: string;
+  variety?: string; arrival_date?: string; modal_price?: string;
+  Modal_Price?: string; Commodity?: string; Market?: string;
+  Arrival_Date?: string; State?: string; District?: string;
 }
 
 async function reverseGeocode(lat: number, lon: number): Promise<{ state: string; district: string }> {
@@ -55,7 +43,6 @@ async function reverseGeocode(lat: number, lon: number): Promise<{ state: string
     const a = j?.address ?? {};
     const state = a.state || "Karnataka";
     const district = a.state_district || a.county || a.district || a.city || "Bangalore";
-    console.log("Reverse geocode:", state, district);
     return { state, district: String(district).replace(/\s+District$/i, "") };
   } catch (e) {
     console.warn("Reverse geocode failed:", e);
@@ -71,59 +58,57 @@ function toMandi(rec: ApiRecord): RealMandiPrice {
   const isVeg = VEGETABLES.has(commodity);
   const price = isVeg ? Math.round(modalQuintal / 100) : Math.round(modalQuintal);
   const unit: MandiPrice["unit"] = isVeg ? "kg" : "quintal";
-  const known = MANDI_PRICES.find((m) => m.crop.toLowerCase() === commodity.toLowerCase());
-  const allLangs: Record<Lang, string> = known?.names ?? {
-    en: commodity, hi: commodity, ta: commodity, kn: commodity, bn: commodity, te: commodity, mr: commodity,
+  const allLangs: Record<Lang, string> = {
+    en: commodity, hi: commodity, ta: commodity, kn: commodity,
+    bn: commodity, te: commodity, mr: commodity,
   };
   return {
-    crop: commodity,
-    hi: known?.hi ?? commodity,
-    names: allLangs,
-    price,
-    unit,
-    trend: "stable",
-    change: "→",
-    market,
-    arrivalDate: arrival,
+    crop: commodity, hi: commodity, names: allLangs,
+    price, unit, trend: "stable", change: "→",
+    market, arrivalDate: arrival,
   };
 }
+
+let inflight: Promise<RealMandiResult | null> | null = null;
 
 export async function fetchRealMandiPrices(force = false): Promise<RealMandiResult | null> {
   if (!force) {
     const cached = cacheGet<RealMandiResult>(CACHE_KEY);
     if (cached) return { ...cached, stale: false };
   }
-  try {
-    const { lat, lon } = await getCoords();
-    const { state, district } = await reverseGeocode(lat, lon);
-    const url = `https://api.data.gov.in/resource/${RESOURCE}?api-key=${API_KEY}&format=json&filters%5BState.keyword%5D=${encodeURIComponent(state)}&filters%5BDistrict.keyword%5D=${encodeURIComponent(district)}&limit=20`;
-    console.log("Mandi API request:", url);
-    const r = await fetch(url);
-    const data = await r.json();
-    console.log("Mandi API response:", data);
-    const records: ApiRecord[] = data?.records ?? [];
-    if (!records.length) throw new Error("no records");
-    const prices = records.map(toMandi).filter((p) => p.crop && p.price > 0);
-    const result: RealMandiResult = {
-      prices,
-      updatedAt: Date.now(),
-      state,
-      district,
-      stale: false,
-    };
-    cacheSet(CACHE_KEY, result, TTL_MS);
-    saveData(RAW_KEY, result);
-    return result;
-  } catch (e) {
-    console.error("Mandi fetch failed:", e);
-    const raw = getData<RealMandiResult>(RAW_KEY);
-    if (raw) return { ...raw, stale: true };
-    return null;
-  }
+  if (inflight) return inflight;
+  inflight = (async () => {
+    try {
+      const { lat, lon } = await getCoords();
+      const { state, district } = await reverseGeocode(lat, lon);
+      const url = `/api/mandi?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`;
+      console.log("Mandi proxy request:", url);
+      const r = await fetch(url);
+      const data = await r.json();
+      console.log("Mandi API response:", data);
+      const records: ApiRecord[] = data?.records ?? [];
+      if (!records.length) throw new Error(data?.error || "no records");
+      const prices = records.map(toMandi).filter((p) => p.crop && p.price > 0);
+      if (!prices.length) throw new Error("no usable records");
+      const result: RealMandiResult = { prices, updatedAt: Date.now(), state, district, stale: false };
+      cacheSet(CACHE_KEY, result, TTL_MS);
+      saveData(RAW_KEY, result);
+      return result;
+    } catch (e) {
+      console.error("Mandi fetch failed:", e);
+      const raw = getData<RealMandiResult>(RAW_KEY);
+      if (raw) return { ...raw, stale: true };
+      return null;
+    } finally {
+      inflight = null;
+    }
+  })();
+  return inflight;
 }
 
 export function timeAgo(ts: number): string {
   const mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 1) return "just now";
   if (mins < 60) return `${mins} min ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
