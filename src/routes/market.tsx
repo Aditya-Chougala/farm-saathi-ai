@@ -72,8 +72,6 @@ function MandiTab() {
   return (
     <div className="glass-card rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-        <h2 className="font-bold text-primary">{t("mandiToday")} • {meta?.location ?? "Karnataka"}</h2>
-      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <h2 className="font-bold text-primary">{t("mandiToday")} {meta?.location ? `• ${meta.location}` : ""}</h2>
         {meta?.live && (
           <span className="text-[10px] font-bold bg-success/15 text-success px-2 py-0.5 rounded-full">
