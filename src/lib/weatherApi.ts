@@ -6,7 +6,21 @@ const LOC_CACHE_KEY = "farmsmart_location";
 const WEATHER_CACHE_KEY = "farmsmart_weather";
 const AQI_CACHE_KEY = "farmsmart_aqi";
 
-export const FALLBACK_COORDS = { lat: 20.5937, lon: 78.9629 };
+export const FALLBACK_COORDS = { lat: 15.3647, lon: 75.1240 }; // Hubballi, Karnataka
+
+async function ipLocation(): Promise<{ lat: number; lon: number } | null> {
+  try {
+    const r = await fetch("https://ipapi.co/json/");
+    const j = await r.json();
+    if (typeof j.latitude === "number" && typeof j.longitude === "number") {
+      console.log("IP location:", j.city, j.region, j.latitude, j.longitude);
+      return { lat: j.latitude, lon: j.longitude };
+    }
+  } catch (e) {
+    console.warn("IP location failed:", e);
+  }
+  return null;
+}
 
 export interface DailyForecast {
   date: string;
@@ -91,23 +105,25 @@ export async function getCoords(): Promise<{ lat: number; lon: number }> {
     console.log("GPS coords (cached):", cached.lat, cached.lon);
     return { lat: cached.lat, lon: cached.lon };
   }
-  if (typeof navigator === "undefined" || !navigator.geolocation) {
-    console.log("GPS coords (fallback, no geolocation):", FALLBACK_COORDS.lat, FALLBACK_COORDS.lon);
-    return FALLBACK_COORDS;
+  const finish = (lat: number, lon: number, src: string) => {
+    console.log(`GPS coords (${src}):`, lat, lon);
+    cacheSet(GPS_CACHE_KEY, { lat, lon, timestamp: Date.now() }, 60 * 60 * 1000);
+    return { lat, lon };
+  };
+  if (typeof navigator !== "undefined" && navigator.geolocation) {
+    const gps = await new Promise<{ lat: number; lon: number } | null>((resolve) => {
+      const t = setTimeout(() => resolve(null), 8500);
+      navigator.geolocation.getCurrentPosition(
+        (p) => { clearTimeout(t); resolve({ lat: p.coords.latitude, lon: p.coords.longitude }); },
+        (err) => { clearTimeout(t); console.warn("GPS denied/error:", err?.message); resolve(null); },
+        { timeout: 8000, enableHighAccuracy: true, maximumAge: 600000 },
+      );
+    });
+    if (gps) return finish(gps.lat, gps.lon, "gps");
   }
-  return new Promise((resolve) => {
-    const done = (lat: number, lon: number, src: string) => {
-      console.log(`GPS coords (${src}):`, lat, lon);
-      if (src === "gps") cacheSet(GPS_CACHE_KEY, { lat, lon, timestamp: Date.now() }, 60 * 60 * 1000);
-      resolve({ lat, lon });
-    };
-    const t = setTimeout(() => done(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon, "fallback-timeout"), 4000);
-    navigator.geolocation.getCurrentPosition(
-      (p) => { clearTimeout(t); done(p.coords.latitude, p.coords.longitude, "gps"); },
-      (err) => { clearTimeout(t); console.warn("GPS denied/error:", err?.message); done(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon, "fallback-denied"); },
-      { timeout: 4000, enableHighAccuracy: false },
-    );
-  });
+  const ip = await ipLocation();
+  if (ip) return finish(ip.lat, ip.lon, "ip");
+  return finish(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon, "fallback");
 }
 
 export async function fetchLocation(lat: number, lon: number, force = false): Promise<LocationInfo | null> {
@@ -116,8 +132,8 @@ export async function fetchLocation(lat: number, lon: number, force = false): Pr
     if (c) return c;
   }
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`;
-    const r = await fetch(url, { headers: { "accept-language": "en" } });
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1&accept-language=hi,en`;
+    const r = await fetch(url, { headers: { "accept-language": "hi,en" } });
     const j = await r.json();
     console.log("Location API response:", j);
     const a = j.address ?? {};

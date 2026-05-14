@@ -46,7 +46,7 @@ function MarketPage() {
 function MandiTab() {
   const { t, lang } = useLang();
   const [prices, setPrices] = useState<RealMandiPrice[]>([]);
-  const [meta, setMeta] = useState<{ live: boolean; updatedAt: number; stale: boolean; location: string } | null>(null);
+  const [meta, setMeta] = useState<{ source: "agmarknet" | "ai" | "cached"; updatedAt: number; stale: boolean; location: string; disclaimer?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -55,7 +55,7 @@ function MandiTab() {
       .then((res) => {
         if (res && res.prices.length) {
           setPrices(res.prices);
-          setMeta({ live: true, updatedAt: res.updatedAt, stale: res.stale, location: `${res.district}, ${res.state}` });
+          setMeta({ source: res.source, updatedAt: res.updatedAt, stale: res.stale, location: `${res.district}, ${res.state}`, disclaimer: res.disclaimer });
         } else {
           setError(true);
         }
@@ -73,9 +73,14 @@ function MandiTab() {
     <div className="glass-card rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <h2 className="font-bold text-primary">{t("mandiToday")} {meta?.location ? `• ${meta.location}` : ""}</h2>
-        {meta?.live && (
+        {meta?.source === "agmarknet" && (
           <span className="text-[10px] font-bold bg-success/15 text-success px-2 py-0.5 rounded-full">
             📊 Agmarknet लाइव डेटा
+          </span>
+        )}
+        {meta?.source === "ai" && (
+          <span className="text-[10px] font-bold bg-accent/30 text-accent-foreground px-2 py-0.5 rounded-full">
+            🤖 AI अनुमानित भाव
           </span>
         )}
       </div>
@@ -108,7 +113,13 @@ function MandiTab() {
           ))}
         </div>
       )}
-      {meta?.live && (
+      {meta?.source === "ai" && (
+        <div className="mt-3 p-2 bg-accent/10 rounded-lg text-[10px] text-center">
+          <div className="font-bold">⚠️ AI अनुमानित भाव / AI Estimated Prices</div>
+          <div className="text-muted-foreground">वास्तविक भाव के लिए नजदीकी मंडी जाएं</div>
+        </div>
+      )}
+      {meta && (
         <p className="text-[10px] text-muted-foreground mt-3 text-center">
           {meta.stale ? "Offline • " : ""}Last updated {timeAgo(meta.updatedAt)}
         </p>

@@ -42,7 +42,7 @@ function HomePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
   const [prices, setPrices] = useState<RealMandiPrice[]>([]);
-  const [liveBadge, setLiveBadge] = useState(false);
+  const [liveBadge, setLiveBadge] = useState<"agmarknet" | "ai" | null>(null);
 
   const load = async (force = false) => {
     try {
@@ -59,7 +59,7 @@ function HomePage() {
     fetchRealMandiPrices().then((res) => {
       if (res && res.prices.length) {
         setPrices(res.prices);
-        setLiveBadge(true);
+        setLiveBadge(res.source === "ai" ? "ai" : res.source === "agmarknet" ? "agmarknet" : null);
       }
     }).catch(() => {});
   }, []);
@@ -163,9 +163,14 @@ function HomePage() {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-primary">{t("mandiPrices")}</h3>
-            {liveBadge && (
+            {liveBadge === "agmarknet" && (
               <span className="text-[9px] font-bold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
                 📊 Agmarknet लाइव
+              </span>
+            )}
+            {liveBadge === "ai" && (
+              <span className="text-[9px] font-bold bg-accent/30 text-accent-foreground px-1.5 py-0.5 rounded-full">
+                🤖 AI अनुमानित
               </span>
             )}
           </div>
