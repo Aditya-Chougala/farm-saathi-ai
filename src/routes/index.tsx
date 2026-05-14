@@ -42,7 +42,7 @@ function HomePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [quote, setQuote] = useState<string>(QUOTES[0]);
   const [prices, setPrices] = useState<RealMandiPrice[]>([]);
-  const [liveBadge, setLiveBadge] = useState(false);
+  const [liveBadge, setLiveBadge] = useState<"agmarknet" | "ai" | null>(null);
 
   const load = async (force = false) => {
     try {
