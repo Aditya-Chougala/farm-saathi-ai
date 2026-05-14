@@ -59,7 +59,7 @@ function HomePage() {
     fetchRealMandiPrices().then((res) => {
       if (res && res.prices.length) {
         setPrices(res.prices);
-        setLiveBadge(true);
+        setLiveBadge(res.source === "ai" ? "ai" : res.source === "agmarknet" ? "agmarknet" : null);
       }
     }).catch(() => {});
   }, []);
