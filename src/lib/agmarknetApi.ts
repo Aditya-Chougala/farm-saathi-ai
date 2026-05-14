@@ -72,6 +72,76 @@ function toMandi(rec: ApiRecord): RealMandiPrice {
   };
 }
 
+function currentSeason(): string {
+  const m = new Date().getMonth() + 1;
+  if (m >= 6 && m <= 9) return "Kharif (Monsoon)";
+  if (m >= 10 || m <= 3) return "Rabi (Winter)";
+  return "Zaid (Summer)";
+}
+
+const COMMON_COMMODITIES = [
+  "Tomato", "Onion", "Potato", "Wheat", "Rice", "Cotton",
+  "Maize", "Soybean", "Groundnut", "Chilli", "Brinjal", "Garlic",
+];
+
+const HINDI_NAMES: Record<string, string> = {
+  Tomato: "टमाटर", Onion: "प्याज", Potato: "आलू", Wheat: "गेहूं",
+  Rice: "चावल", Cotton: "कपास", Maize: "मक्का", Soybean: "सोयाबीन",
+  Groundnut: "मूंगफली", Chilli: "मिर्च", Brinjal: "बैंगन", Garlic: "लहसुन",
+};
+
+interface AiPrice {
+  commodity: string; commodityHindi?: string;
+  minPrice?: number; maxPrice?: number; modalPrice: number;
+  unit?: "kg" | "quintal"; mandi?: string;
+  trend?: "up" | "down" | "stable"; trendPercent?: number;
+}
+
+async function fetchGroqEstimate(state: string, district: string): Promise<RealMandiResult | null> {
+  try {
+    const sys = "You are an Indian agricultural market expert. Output ONLY valid JSON.";
+    const user = `Today: ${new Date().toLocaleDateString("en-IN")}
+Farmer location: ${district}, ${state}, India
+Season: ${currentSeason()}
+Give realistic current mandi prices for these commodities for today, considering seasonal patterns and recent trends: ${COMMON_COMMODITIES.join(", ")}.
+Return ONLY this JSON shape:
+{"prices":[{"commodity":"Tomato","commodityHindi":"टमाटर","minPrice":number,"maxPrice":number,"modalPrice":number,"unit":"kg|quintal","mandi":"nearest mandi name","trend":"up|down|stable","trendPercent":number}],"lastUpdated":"${new Date().toLocaleDateString("en-IN")}","disclaimer":"AI अनुमानित भाव - वास्तविक भाव मंडी में भिन्न हो सकते हैं"}`;
+    const json = await groqText(sys, user);
+    console.log("Groq mandi estimate:", json);
+    const list: AiPrice[] = json?.prices ?? [];
+    if (!list.length) return null;
+    const prices: RealMandiPrice[] = list
+      .filter((p) => p.commodity && typeof p.modalPrice === "number" && p.modalPrice > 0)
+      .map((p) => {
+        const commodity = p.commodity;
+        const hi = p.commodityHindi || HINDI_NAMES[commodity] || commodity;
+        const allLangs: Record<Lang, string> = {
+          en: commodity, hi, ta: commodity, kn: commodity,
+          bn: commodity, te: commodity, mr: commodity,
+        };
+        const trend = p.trend ?? "stable";
+        const pct = p.trendPercent ?? 0;
+        return {
+          crop: commodity, hi, names: allLangs,
+          price: Math.round(p.modalPrice),
+          unit: (p.unit === "quintal" ? "quintal" : "kg"),
+          trend, change: trend === "up" ? `+${pct}%` : trend === "down" ? `-${pct}%` : "→",
+          market: p.mandi || `${district} Mandi`,
+          arrivalDate: new Date().toLocaleDateString("en-IN"),
+        };
+      });
+    if (!prices.length) return null;
+    return {
+      prices, updatedAt: Date.now(), state, district, stale: false,
+      source: "ai",
+      disclaimer: json?.disclaimer || "AI अनुमानित भाव - वास्तविक भाव मंडी में भिन्न हो सकते हैं",
+    };
+  } catch (e) {
+    console.warn("Groq mandi estimate failed:", e);
+    return null;
+  }
+}
+
 let inflight: Promise<RealMandiResult | null> | null = null;
 
 export async function fetchRealMandiPrices(force = false): Promise<RealMandiResult | null> {
@@ -81,9 +151,12 @@ export async function fetchRealMandiPrices(force = false): Promise<RealMandiResu
   }
   if (inflight) return inflight;
   inflight = (async () => {
+    let state = "Karnataka";
+    let district = "Bangalore";
     try {
       const { lat, lon } = await getCoords();
-      const { state, district } = await reverseGeocode(lat, lon);
+      const geo = await reverseGeocode(lat, lon);
+      state = geo.state; district = geo.district;
       const url = `/api/mandi?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`;
       console.log("Mandi proxy request:", url);
       const r = await fetch(url);
@@ -93,14 +166,22 @@ export async function fetchRealMandiPrices(force = false): Promise<RealMandiResu
       if (!records.length) throw new Error(data?.error || "no records");
       const prices = records.map(toMandi).filter((p) => p.crop && p.price > 0);
       if (!prices.length) throw new Error("no usable records");
-      const result: RealMandiResult = { prices, updatedAt: Date.now(), state, district, stale: false };
+      const result: RealMandiResult = {
+        prices, updatedAt: Date.now(), state, district, stale: false, source: "agmarknet",
+      };
       cacheSet(CACHE_KEY, result, TTL_MS);
       saveData(RAW_KEY, result);
       return result;
     } catch (e) {
-      console.error("Mandi fetch failed:", e);
+      console.error("Mandi fetch failed, trying AI fallback:", e);
+      const ai = await fetchGroqEstimate(state, district);
+      if (ai) {
+        cacheSet(CACHE_KEY, ai, TTL_MS);
+        saveData(RAW_KEY, ai);
+        return ai;
+      }
       const raw = getData<RealMandiResult>(RAW_KEY);
-      if (raw) return { ...raw, stale: true };
+      if (raw) return { ...raw, stale: true, source: raw.source ?? "cached" };
       return null;
     } finally {
       inflight = null;
