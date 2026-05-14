@@ -6,7 +6,21 @@ const LOC_CACHE_KEY = "farmsmart_location";
 const WEATHER_CACHE_KEY = "farmsmart_weather";
 const AQI_CACHE_KEY = "farmsmart_aqi";
 
-export const FALLBACK_COORDS = { lat: 20.5937, lon: 78.9629 };
+export const FALLBACK_COORDS = { lat: 15.3647, lon: 75.1240 }; // Hubballi, Karnataka
+
+async function ipLocation(): Promise<{ lat: number; lon: number } | null> {
+  try {
+    const r = await fetch("https://ipapi.co/json/");
+    const j = await r.json();
+    if (typeof j.latitude === "number" && typeof j.longitude === "number") {
+      console.log("IP location:", j.city, j.region, j.latitude, j.longitude);
+      return { lat: j.latitude, lon: j.longitude };
+    }
+  } catch (e) {
+    console.warn("IP location failed:", e);
+  }
+  return null;
+}
 
 export interface DailyForecast {
   date: string;
