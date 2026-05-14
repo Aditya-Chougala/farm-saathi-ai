@@ -27,6 +27,8 @@ export interface RealMandiResult {
   state: string;
   district: string;
   stale: boolean;
+  source: "agmarknet" | "ai" | "cached";
+  disclaimer?: string;
 }
 
 interface ApiRecord {
