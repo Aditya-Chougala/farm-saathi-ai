@@ -1,6 +1,7 @@
-// Real Agmarknet mandi prices via Data.gov.in (server-proxied to bypass CORS + rate limits)
+// Real Agmarknet mandi prices via Data.gov.in (server-proxied) with Groq AI fallback
 import { cacheGet, cacheSet, getData, saveData } from "./db";
 import { getCoords } from "./weatherApi";
+import { groqText } from "./groqApi";
 import type { MandiPrice } from "./demoResults";
 import type { Lang } from "@/i18n/LanguageContext";
 
