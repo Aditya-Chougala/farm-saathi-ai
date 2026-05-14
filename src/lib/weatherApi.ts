@@ -132,8 +132,8 @@ export async function fetchLocation(lat: number, lon: number, force = false): Pr
     if (c) return c;
   }
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`;
-    const r = await fetch(url, { headers: { "accept-language": "en" } });
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1&accept-language=hi,en`;
+    const r = await fetch(url, { headers: { "accept-language": "hi,en" } });
     const j = await r.json();
     console.log("Location API response:", j);
     const a = j.address ?? {};
