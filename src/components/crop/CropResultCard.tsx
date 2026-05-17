@@ -1,5 +1,6 @@
-import { TrendingUp, TrendingDown, Minus, IndianRupee, Calendar, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, IndianRupee, Calendar, AlertTriangle, Share2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { shareCropSuggestion } from "@/utils/shareUtils";
 import type { DemoCrop } from "@/lib/demoResults";
 import { useLang } from "@/i18n/LanguageContext";
 
@@ -91,6 +92,14 @@ export function CropResultCard({ crop }: { crop: DemoCrop }) {
             </ul>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={() => shareCropSuggestion(localized, crop.financial.expectedProfitPerAcre, crop.matchScore)}
+          className="w-full min-touch bg-accent text-accent-foreground rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition"
+        >
+          <Share2 className="w-4 h-4" /> 📤 शेयर करें / Share
+        </button>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
 import { QUOTES } from "@/lib/demoResults";
 import { fetchRealMandiPrices, type RealMandiPrice } from "@/lib/agmarknetApi";
+import { shareApp } from "@/utils/shareUtils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -194,6 +195,14 @@ function HomePage() {
         <Sun className="w-5 h-5 mx-auto text-accent-foreground mb-1" />
         <p className="text-sm font-semibold italic">{quote}</p>
       </section>
+
+      <button
+        type="button"
+        onClick={shareApp}
+        className="w-full min-touch gradient-primary text-primary-foreground rounded-2xl font-bold flex items-center justify-center gap-2 shadow-md active:scale-95 transition"
+      >
+        📤 दोस्तों को बताएं / Share App
+      </button>
     </div>
   );
 }

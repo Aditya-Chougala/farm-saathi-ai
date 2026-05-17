@@ -7,6 +7,7 @@ import { diseaseHindi } from "@/constants/diseaseTranslations";
 import { saveData, getData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
+import { shareDiseaseReport } from "@/utils/shareUtils";
 
 export const Route = createFileRoute("/disease")({
   head: () => ({
@@ -111,11 +112,9 @@ function DiseaseDetection() {
 
   const shareWA = () => {
     if (!verdict) return;
-    const txt = `🌿 FarmSmart AI
-${verdict.cropType} — ${lang === "hi" ? diseaseHindi(verdict.label) : verdict.diseaseNameFormatted}
-${t("agree")}: ${verdict.agreementCount}/3 • ${verdict.confidence}%
-${treatment?.organicTreatment.steps[0] ?? ""}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank");
+    const diseaseName = lang === "hi" ? diseaseHindi(verdict.label) : verdict.diseaseNameFormatted;
+    const treat = treatment?.organicTreatment.steps[0] ?? "";
+    shareDiseaseReport(verdict.cropType, diseaseName, treat, verdict.confidence);
   };
 
   const findDealer = () => {
