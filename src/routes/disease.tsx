@@ -7,6 +7,7 @@ import { diseaseHindi } from "@/constants/diseaseTranslations";
 import { saveData, getData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
+import { shareDiseaseReport } from "@/utils/shareUtils";
 
 export const Route = createFileRoute("/disease")({
   head: () => ({
