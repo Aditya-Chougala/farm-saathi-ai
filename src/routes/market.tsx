@@ -197,9 +197,9 @@ function BuyTab() {
             <div className="text-sm font-semibold">{p.price}</div>
             <div className="text-xs text-muted-foreground">{p.dealer} • {p.dist}</div>
           </div>
-          <a href={`https://wa.me/${p.phone}`} target="_blank" className="min-touch px-3 bg-success text-primary-foreground rounded-xl font-semibold text-xs flex items-center gap-1">
+          <button type="button" onClick={() => contactSeller(p.phone, p.name, "buy")} className="min-touch px-3 bg-success text-primary-foreground rounded-xl font-semibold text-xs flex items-center gap-1">
             <Phone className="w-4 h-4" /> {t("contact")}
-          </a>
+          </button>
         </div>
       ))}
     </div>
