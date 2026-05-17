@@ -92,6 +92,14 @@ export function CropResultCard({ crop }: { crop: DemoCrop }) {
             </ul>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={() => shareCropSuggestion(localized, crop.financial.expectedProfitPerAcre, crop.matchScore)}
+          className="w-full min-touch bg-accent text-accent-foreground rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition"
+        >
+          <Share2 className="w-4 h-4" /> 📤 शेयर करें / Share
+        </button>
       </div>
     </div>
   );
