@@ -5,6 +5,7 @@ import { fetchRealMandiPrices, timeAgo, type RealMandiPrice } from "@/lib/agmark
 import { getData, saveData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
+import { contactSeller } from "@/utils/shareUtils";
 
 export const Route = createFileRoute("/market")({
   head: () => ({
