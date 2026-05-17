@@ -168,9 +168,9 @@ function SellTab() {
               <div className="text-sm">{l.price}</div>
               <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="w-3 h-3" />{l.location}</div>
             </div>
-            <a href={`https://wa.me/${l.phone.replace(/\D/g, "")}`} target="_blank" className="min-touch px-4 bg-success text-primary-foreground rounded-xl font-semibold text-sm flex items-center gap-1">
+            <button type="button" onClick={() => contactSeller(l.phone, l.crop, "buy")} className="min-touch px-4 bg-success text-primary-foreground rounded-xl font-semibold text-sm flex items-center gap-1">
               <Phone className="w-4 h-4" /> WhatsApp
-            </a>
+            </button>
           </div>
         ))
       )}
