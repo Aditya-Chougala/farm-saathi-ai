@@ -6,6 +6,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
 import { QUOTES } from "@/lib/demoResults";
 import { fetchRealMandiPrices, type RealMandiPrice } from "@/lib/agmarknetApi";
+import { shareApp } from "@/utils/shareUtils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
