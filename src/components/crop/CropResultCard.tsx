@@ -1,5 +1,6 @@
-import { TrendingUp, TrendingDown, Minus, IndianRupee, Calendar, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, IndianRupee, Calendar, AlertTriangle, Share2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { shareCropSuggestion } from "@/utils/shareUtils";
 import type { DemoCrop } from "@/lib/demoResults";
 import { useLang } from "@/i18n/LanguageContext";
 
