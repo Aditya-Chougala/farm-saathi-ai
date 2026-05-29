@@ -1,13 +1,13 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "Farm x",
   "private": true,
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
-    "preview": "vite preview",
+    "dev": "bun run dev",
+    "build": "bun run build",
+    "start": "bun run build && bun run start --port $PORT",
+    "preview": "vite preview --port $PORT --host 0.0.0.0",    
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -68,6 +68,9 @@
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
     "zod": "^3.24.2"
+  },
+    "engines": {
+      "node": ">=18"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
