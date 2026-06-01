@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { translations, type TKey } from "./translations";
 
-export type Lang = "en" | "hi" | "ta" | "kn" | "bn" | "te" | "mr" | "pa";
+export type Lang = "en" | "hi" | "ta" | "kn" | "bn" | "te" | "mr";
 
 export const LANGS: Array<{ code: Lang; label: string }> = [
   { code: "en", label: "English" },
@@ -11,7 +11,6 @@ export const LANGS: Array<{ code: Lang; label: string }> = [
   { code: "bn", label: "বাংলা" },
   { code: "te", label: "తెలుగు" },
   { code: "mr", label: "मराठी" },
-  { code: "pa", label: "ਪੰਜਾਬੀ" },
 ];
 
 const STORAGE_KEY = "language";

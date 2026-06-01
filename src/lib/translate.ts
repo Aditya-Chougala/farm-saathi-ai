@@ -13,7 +13,6 @@ const LANG_NAME: Record<Lang, string> = {
   bn: "Bengali",
   te: "Telugu",
   mr: "Marathi",
-  pa: "Punjabi",
 };
 
 type Cache = Record<string, string>;
