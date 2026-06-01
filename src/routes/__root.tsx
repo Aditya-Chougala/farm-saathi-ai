@@ -6,7 +6,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
+
 
 import appCss from "../styles.css?url";
 import { LanguageProvider } from "@/i18n/LanguageContext";
@@ -85,13 +85,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  useEffect(() => {
-    const gemini = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
-    const groq = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
-    console.log("GEMINI KEY:", gemini ? "✅ " + gemini.substring(0, 8) : "❌ MISSING");
-    console.log("GROQ KEY:", groq ? "✅ " + groq.substring(0, 8) : "❌ MISSING");
-    if (!gemini || !groq) console.error("API keys missing — add to .env file");
-  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>

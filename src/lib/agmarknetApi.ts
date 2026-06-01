@@ -48,7 +48,7 @@ async function reverseGeocode(lat: number, lon: number): Promise<{ state: string
     const district = a.state_district || a.county || a.district || a.city || "Bangalore";
     return { state, district: String(district).replace(/\s+District$/i, "") };
   } catch (e) {
-    console.warn("Reverse geocode failed:", e);
+    if (import.meta.env.DEV) console.warn("Reverse geocode failed:", e);
     return { state: "Karnataka", district: "Bangalore" };
   }
 }
@@ -107,7 +107,6 @@ Give realistic current mandi prices for these commodities for today, considering
 Return ONLY this JSON shape:
 {"prices":[{"commodity":"Tomato","commodityHindi":"टमाटर","minPrice":number,"maxPrice":number,"modalPrice":number,"unit":"kg|quintal","mandi":"nearest mandi name","trend":"up|down|stable","trendPercent":number}],"lastUpdated":"${new Date().toLocaleDateString("en-IN")}","disclaimer":"AI अनुमानित भाव - वास्तविक भाव मंडी में भिन्न हो सकते हैं"}`;
     const json = await groqText(sys, user);
-    console.log("Groq mandi estimate:", json);
     const list: AiPrice[] = json?.prices ?? [];
     if (!list.length) return null;
     const prices: RealMandiPrice[] = list
@@ -137,7 +136,7 @@ Return ONLY this JSON shape:
       disclaimer: json?.disclaimer || "AI अनुमानित भाव - वास्तविक भाव मंडी में भिन्न हो सकते हैं",
     };
   } catch (e) {
-    console.warn("Groq mandi estimate failed:", e);
+    if (import.meta.env.DEV) console.warn("Groq mandi estimate failed:", e);
     return null;
   }
 }
@@ -158,10 +157,8 @@ export async function fetchRealMandiPrices(force = false): Promise<RealMandiResu
       const geo = await reverseGeocode(lat, lon);
       state = geo.state; district = geo.district;
       const url = `/api/mandi?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`;
-      console.log("Mandi proxy request:", url);
       const r = await fetch(url);
       const data = await r.json();
-      console.log("Mandi API response:", data);
       const records: ApiRecord[] = data?.records ?? [];
       if (!records.length) throw new Error(data?.error || "no records");
       const prices = records.map(toMandi).filter((p) => p.crop && p.price > 0);
@@ -173,7 +170,7 @@ export async function fetchRealMandiPrices(force = false): Promise<RealMandiResu
       saveData(RAW_KEY, result);
       return result;
     } catch (e) {
-      console.error("Mandi fetch failed, trying AI fallback:", e);
+      if (import.meta.env.DEV) console.error("Mandi fetch failed, trying AI fallback:", e);
       const ai = await fetchGroqEstimate(state, district);
       if (ai) {
         cacheSet(CACHE_KEY, ai, TTL_MS);

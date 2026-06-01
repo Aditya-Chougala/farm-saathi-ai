@@ -1,33 +1,11 @@
-// Groq text + vision (browser-side as user requested VITE_ keys)
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+// Groq text + vision via server function (key stays on the server).
+import { groqChatFn } from "./ai.functions";
 
-const KEY = (import.meta as any).env?.VITE_GROQ_API_KEY as string | undefined;
-
-async function callGroq(body: any, retries = 3): Promise<any> {
-  if (!KEY) throw new Error("missing_groq_key");
-  let delay = 2000;
-  for (let i = 0; i < retries; i++) {
-    const r = await fetch(`${GROQ_URL}?t=${Date.now()}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${KEY}`,
-      },
-      body: JSON.stringify(body),
-    });
-    if (r.ok) return r.json();
-    if (r.status === 429 && i < retries - 1) {
-      await new Promise((res) => setTimeout(res, delay));
-      delay += 2000;
-      continue;
-    }
-    const txt = await r.text().catch(() => "");
-    throw new Error(`groq_${r.status}: ${txt.slice(0, 80)}`);
-  }
+async function callGroq(body: unknown): Promise<any> {
+  return groqChatFn({ data: { body } });
 }
 
 function extractJson(text: string): any {
-  // Strip ```json fences and find outermost JSON
   const cleaned = text.replace(/```json\s*|```/g, "").trim();
   const start = cleaned.search(/[\[{]/);
   if (start < 0) throw new Error("no_json");
@@ -72,26 +50,20 @@ export async function groqVision(base64NoPrefix: string, prompt: string): Promis
   let lastErr: any;
   for (const model of VISION_MODELS) {
     try {
-      const j = await callGroq(
-        {
-          model,
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: prompt },
-                {
-                  type: "image_url",
-                  image_url: { url: `data:image/jpeg;base64,${base64NoPrefix}` },
-                },
-              ],
-            },
-          ],
-          temperature: 0.2,
-          max_tokens: 512,
-        },
-        1,
-      );
+      const j = await callGroq({
+        model,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64NoPrefix}` } },
+            ],
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 512,
+      });
       return j.choices?.[0]?.message?.content ?? "";
     } catch (e) {
       lastErr = e;
