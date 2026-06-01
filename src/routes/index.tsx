@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp, RefreshCw, MapPin } from "lucide-react";
-import { fetchHomeData, weatherEmoji, describeWeatherCode, type HomeData } from "@/lib/weatherApi";
+import { Cloud, Droplets, Wind, Sun, Sprout, ScanLine, Store, TrendingUp, RefreshCw, MapPin, Beaker, CalendarDays } from "lucide-react";
+import { fetchHomeData, weatherEmoji, describeWeatherCode, locationDenied, type HomeData } from "@/lib/weatherApi";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
 import { QUOTES } from "@/lib/demoResults";
@@ -153,9 +153,27 @@ function HomePage() {
         </section>
       )}
 
+      {locationDenied && (
+        <section className="glass-card rounded-2xl p-3 flex items-center justify-between gap-3 bg-warning/15">
+          <div className="text-xs">
+            <div className="font-bold">📍 स्थान की अनुमति दें</div>
+            <div className="text-muted-foreground">For accurate weather & mandi prices.</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => { localStorage.removeItem("farmsmart_gps"); window.location.reload(); }}
+            className="min-touch px-3 gradient-primary text-primary-foreground rounded-xl text-xs font-bold"
+          >
+            Allow
+          </button>
+        </section>
+      )}
+
       <section className="grid grid-cols-2 gap-3">
         <FeatureTile to="/crop" icon={Sprout} k="cropSuggest" gradient="gradient-primary" />
         <FeatureTile to="/disease" icon={ScanLine} k="diseaseScan" gradient="gradient-warm" />
+        <FeatureTileRaw to="/fertilizer" icon={Beaker} label="Fertilizer" gradient="bg-primary-glow/90 text-primary-foreground" />
+        <FeatureTileRaw to="/calendar" icon={CalendarDays} label="Calendar" gradient="bg-accent/90 text-accent-foreground" />
         <FeatureTile to="/market" icon={Store} k="marketplace" gradient="bg-earth/90 text-primary-foreground" />
         <FeatureTile to="/market" icon={TrendingUp} k="mandiPrices" gradient="bg-success/90 text-primary-foreground" />
       </section>
@@ -214,6 +232,17 @@ function FeatureTile({ to, icon: Icon, k, gradient }: { to: string; icon: typeof
       <Icon className="w-7 h-7" />
       <div className="mt-3 leading-tight">
         <div className="font-bold">{t(k)}</div>
+      </div>
+    </Link>
+  );
+}
+
+function FeatureTileRaw({ to, icon: Icon, label, gradient }: { to: string; icon: typeof Cloud; label: string; gradient: string }) {
+  return (
+    <Link to={to} className={`glass-card rounded-2xl p-4 ${gradient} min-touch flex flex-col justify-between active:scale-95 transition shadow-md`}>
+      <Icon className="w-7 h-7" />
+      <div className="mt-3 leading-tight">
+        <div className="font-bold">{label}</div>
       </div>
     </Link>
   );
