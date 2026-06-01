@@ -1,4 +1,5 @@
 // Open-Meteo weather + Nominatim geocoding + WAQI air quality
+// GPS-only location (no IP fallback). Surfaces `locationDenied` so UI can prompt.
 import { cacheGet, cacheSet } from "./db";
 
 const GPS_CACHE_KEY = "farmsmart_gps";
@@ -7,20 +8,8 @@ const WEATHER_CACHE_KEY = "farmsmart_weather";
 const AQI_CACHE_KEY = "farmsmart_aqi";
 
 export const FALLBACK_COORDS = { lat: 15.3647, lon: 75.1240 }; // Hubballi, Karnataka
-
-async function ipLocation(): Promise<{ lat: number; lon: number } | null> {
-  try {
-    const r = await fetch("https://ipapi.co/json/");
-    const j = await r.json();
-    if (typeof j.latitude === "number" && typeof j.longitude === "number") {
-      console.log("IP location:", j.city, j.region, j.latitude, j.longitude);
-      return { lat: j.latitude, lon: j.longitude };
-    }
-  } catch (e) {
-    console.warn("IP location failed:", e);
-  }
-  return null;
-}
+export let locationDenied = false;
+export let locationPending = true;
 
 export interface DailyForecast {
   date: string;
@@ -65,6 +54,7 @@ export interface HomeData {
   weather: Weather | null;
   aqi: AQIInfo | null;
   fetchedAt: number;
+  locationDenied: boolean;
 }
 
 export function describeWeatherCode(code: number): string {
@@ -102,28 +92,45 @@ function aqiAdvice(level: AQIInfo["level"]): string {
 export async function getCoords(): Promise<{ lat: number; lon: number }> {
   const cached = cacheGet<{ lat: number; lon: number; timestamp: number }>(GPS_CACHE_KEY);
   if (cached) {
-    console.log("GPS coords (cached):", cached.lat, cached.lon);
+    locationDenied = false;
+    locationPending = false;
     return { lat: cached.lat, lon: cached.lon };
   }
-  const finish = (lat: number, lon: number, src: string) => {
-    console.log(`GPS coords (${src}):`, lat, lon);
-    cacheSet(GPS_CACHE_KEY, { lat, lon, timestamp: Date.now() }, 60 * 60 * 1000);
-    return { lat, lon };
-  };
   if (typeof navigator !== "undefined" && navigator.geolocation) {
     const gps = await new Promise<{ lat: number; lon: number } | null>((resolve) => {
-      const t = setTimeout(() => resolve(null), 8500);
+      const t = setTimeout(() => resolve(null), 10500);
       navigator.geolocation.getCurrentPosition(
         (p) => { clearTimeout(t); resolve({ lat: p.coords.latitude, lon: p.coords.longitude }); },
-        (err) => { clearTimeout(t); console.warn("GPS denied/error:", err?.message); resolve(null); },
-        { timeout: 8000, enableHighAccuracy: true, maximumAge: 600000 },
+        (err) => {
+          clearTimeout(t);
+          console.warn("GPS denied/error:", err?.code, err?.message);
+          if (err?.code === 1) locationDenied = true; // PERMISSION_DENIED
+          resolve(null);
+        },
+        { timeout: 10000, enableHighAccuracy: true, maximumAge: 600000 },
       );
     });
-    if (gps) return finish(gps.lat, gps.lon, "gps");
+    locationPending = false;
+    if (gps) {
+      locationDenied = false;
+      cacheSet(GPS_CACHE_KEY, { lat: gps.lat, lon: gps.lon, timestamp: Date.now() }, 60 * 60 * 1000);
+      console.log("GPS coords:", gps.lat, gps.lon);
+      return gps;
+    }
   }
-  const ip = await ipLocation();
-  if (ip) return finish(ip.lat, ip.lon, "ip");
-  return finish(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon, "fallback");
+  locationPending = false;
+  console.warn("Using fallback coordinates (Hubballi)");
+  return { ...FALLBACK_COORDS };
+}
+
+export async function requestLocationAgain(): Promise<boolean> {
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(GPS_CACHE_KEY);
+    localStorage.removeItem(LOC_CACHE_KEY);
+  }
+  locationDenied = false;
+  const c = await getCoords();
+  return !locationDenied && c.lat !== FALLBACK_COORDS.lat;
 }
 
 export async function fetchLocation(lat: number, lon: number, force = false): Promise<LocationInfo | null> {
@@ -132,10 +139,9 @@ export async function fetchLocation(lat: number, lon: number, force = false): Pr
     if (c) return c;
   }
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1&accept-language=hi,en`;
-    const r = await fetch(url, { headers: { "accept-language": "hi,en" } });
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1&accept-language=en`;
+    const r = await fetch(url, { headers: { "accept-language": "en" } });
     const j = await r.json();
-    console.log("Location API response:", j);
     const a = j.address ?? {};
     const info: LocationInfo = {
       city: a.city || a.town || a.village || a.county || a.suburb || j.name || "Unknown",
@@ -159,11 +165,9 @@ export async function fetchWeather(force = false): Promise<Weather> {
   }
   const { lat, lon } = await getCoords();
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,weathercode,apparent_temperature&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Asia/Kolkata&forecast_days=7&t=${Date.now()}`;
-    console.log("Weather API request:", url);
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,weathercode,apparent_temperature&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Asia/Kolkata&forecast_days=7`;
     const r = await fetch(url);
     const j = await r.json();
-    console.log("Weather API response:", j);
     const c = j.current ?? {};
     const d = j.daily ?? {};
     const daily: DailyForecast[] = (d.time ?? []).map((date: string, i: number) => ({
@@ -205,14 +209,11 @@ export async function fetchAQI(lat: number, lon: number, force = false): Promise
     const url = `https://api.waqi.info/feed/geo:${lat};${lon}/?token=${token}`;
     const r = await fetch(url);
     const j = await r.json();
-    console.log("AQI API response:", j);
     if (j.status !== "ok" || typeof j.data?.aqi !== "number") return null;
     const aqi = j.data.aqi as number;
     const level = aqiLevel(aqi);
     const info: AQIInfo = {
-      aqi,
-      level,
-      advice: aqiAdvice(level),
+      aqi, level, advice: aqiAdvice(level),
       station: j.data?.city?.name,
       fetchedAt: Date.now(),
     };
@@ -231,5 +232,5 @@ export async function fetchHomeData(force = false): Promise<HomeData> {
     fetchWeather(force).catch(() => null as unknown as Weather),
     fetchAQI(lat, lon, force).catch(() => null),
   ]);
-  return { location, weather, aqi, fetchedAt: Date.now() };
+  return { location, weather, aqi, fetchedAt: Date.now(), locationDenied };
 }
