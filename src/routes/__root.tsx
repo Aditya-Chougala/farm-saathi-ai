@@ -48,9 +48,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
-      { title: "FarmSmart AI — किसान का अपना सहायक" },
+      { title: "farmentum" },
       { name: "description", content: "AI-powered crop suggestions, disease detection and mandi prices for Indian farmers." },
       { name: "theme-color", content: "#2D6A4F" },
+      { property: "og:title", content: "farmentum" },
+      { name: "twitter:title", content: "farmentum" },
+      { property: "og:description", content: "AI-powered crop suggestions, disease detection and mandi prices for Indian farmers." },
+      { name: "twitter:description", content: "AI-powered crop suggestions, disease detection and mandi prices for Indian farmers." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/8bcc0ad3-bd20-4c7c-bed0-c065807d2d27" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/8bcc0ad3-bd20-4c7c-bed0-c065807d2d27" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
