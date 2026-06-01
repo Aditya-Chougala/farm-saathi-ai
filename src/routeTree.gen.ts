@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MarketRouteImport } from './routes/market'
+import { Route as FertilizerRouteImport } from './routes/fertilizer'
 import { Route as DiseaseRouteImport } from './routes/disease'
 import { Route as CropRouteImport } from './routes/crop'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiMandiRouteImport } from './routes/api/mandi'
 
@@ -26,6 +28,11 @@ const MarketRoute = MarketRouteImport.update({
   path: '/market',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FertilizerRoute = FertilizerRouteImport.update({
+  id: '/fertilizer',
+  path: '/fertilizer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiseaseRoute = DiseaseRouteImport.update({
   id: '/disease',
   path: '/disease',
@@ -34,6 +41,11 @@ const DiseaseRoute = DiseaseRouteImport.update({
 const CropRoute = CropRouteImport.update({
   id: '/crop',
   path: '/crop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -49,16 +61,20 @@ const ApiMandiRoute = ApiMandiRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/crop': typeof CropRoute
   '/disease': typeof DiseaseRoute
+  '/fertilizer': typeof FertilizerRoute
   '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
   '/api/mandi': typeof ApiMandiRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/crop': typeof CropRoute
   '/disease': typeof DiseaseRoute
+  '/fertilizer': typeof FertilizerRoute
   '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
   '/api/mandi': typeof ApiMandiRoute
@@ -66,22 +82,42 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/crop': typeof CropRoute
   '/disease': typeof DiseaseRoute
+  '/fertilizer': typeof FertilizerRoute
   '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
   '/api/mandi': typeof ApiMandiRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/crop' | '/disease' | '/market' | '/profile' | '/api/mandi'
+  fullPaths:
+    | '/'
+    | '/calendar'
+    | '/crop'
+    | '/disease'
+    | '/fertilizer'
+    | '/market'
+    | '/profile'
+    | '/api/mandi'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/crop' | '/disease' | '/market' | '/profile' | '/api/mandi'
+  to:
+    | '/'
+    | '/calendar'
+    | '/crop'
+    | '/disease'
+    | '/fertilizer'
+    | '/market'
+    | '/profile'
+    | '/api/mandi'
   id:
     | '__root__'
     | '/'
+    | '/calendar'
     | '/crop'
     | '/disease'
+    | '/fertilizer'
     | '/market'
     | '/profile'
     | '/api/mandi'
@@ -89,8 +125,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalendarRoute: typeof CalendarRoute
   CropRoute: typeof CropRoute
   DiseaseRoute: typeof DiseaseRoute
+  FertilizerRoute: typeof FertilizerRoute
   MarketRoute: typeof MarketRoute
   ProfileRoute: typeof ProfileRoute
   ApiMandiRoute: typeof ApiMandiRoute
@@ -112,6 +150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fertilizer': {
+      id: '/fertilizer'
+      path: '/fertilizer'
+      fullPath: '/fertilizer'
+      preLoaderRoute: typeof FertilizerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/disease': {
       id: '/disease'
       path: '/disease'
@@ -124,6 +169,13 @@ declare module '@tanstack/react-router' {
       path: '/crop'
       fullPath: '/crop'
       preLoaderRoute: typeof CropRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -145,8 +197,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalendarRoute: CalendarRoute,
   CropRoute: CropRoute,
   DiseaseRoute: DiseaseRoute,
+  FertilizerRoute: FertilizerRoute,
   MarketRoute: MarketRoute,
   ProfileRoute: ProfileRoute,
   ApiMandiRoute: ApiMandiRoute,

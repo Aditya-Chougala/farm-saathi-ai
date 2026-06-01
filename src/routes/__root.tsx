@@ -9,10 +9,10 @@ import {
 import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
-import farmBg from "../assets/farm-bg.jpg";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
+import { VoiceFab } from "@/components/VoiceFab";
 
 function NotFoundComponent() {
   return (
@@ -74,7 +74,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
-        <style dangerouslySetInnerHTML={{ __html: `:root{--farm-bg-image:url(${farmBg});}` }} />
       </head>
       <body>
         {children}
@@ -103,6 +102,7 @@ function RootComponent() {
               <Outlet />
             </main>
             <BottomNav />
+            <VoiceFab />
           </div>
         </div>
       </LanguageProvider>
