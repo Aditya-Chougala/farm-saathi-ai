@@ -13,6 +13,7 @@ import farmBg from "../assets/farm-bg.jpg";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
+import { VoiceFab } from "@/components/VoiceFab";
 
 function NotFoundComponent() {
   return (
@@ -103,6 +104,7 @@ function RootComponent() {
               <Outlet />
             </main>
             <BottomNav />
+            <VoiceFab />
           </div>
         </div>
       </LanguageProvider>
