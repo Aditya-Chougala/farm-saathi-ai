@@ -32,7 +32,7 @@ function forecast(base: number, drift: number): { month: string; price: number }
   return months.map((m, i) => ({ month: m, price: Math.round(base + drift * i + (Math.random() * 2 - 1)) }));
 }
 
-const N = (en: string, hi: string, ta: string, kn: string, bn: string, te: string, mr: string): LName => ({ en, hi, ta, kn, bn, te, mr });
+const N = (en: string, hi: string, ta: string, kn: string, bn: string, te: string, mr: string, pa?: string): LName => ({ en, hi, ta, kn, bn, te, mr, pa: pa ?? hi });
 
 export const DEMO_CROPS: DemoCrop[] = [
   {
