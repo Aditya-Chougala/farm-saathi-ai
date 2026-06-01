@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 const RESOURCE = "9ef84268-d588-465a-a308-a864a43d0070";
-const API_KEY = "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b";
+// API key read from server-only env var. Set DATA_GOV_IN_API_KEY in project secrets.
 
 // Simple in-memory server cache (per-isolate) to dampen rate-limit hits
 const cache = new Map<string, { at: number; data: unknown }>();
@@ -21,8 +21,15 @@ export const Route = createFileRoute("/api/mandi")({
             headers: { "content-type": "application/json", "x-cache": "HIT" },
           });
         }
+        const apiKey = process.env.DATA_GOV_IN_API_KEY;
+        if (!apiKey) {
+          return new Response(JSON.stringify({ error: "missing_data_gov_in_api_key", records: [] }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
         const params = new URLSearchParams({
-          "api-key": API_KEY,
+          "api-key": apiKey,
           format: "json",
           limit: "30",
         });

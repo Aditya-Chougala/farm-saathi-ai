@@ -93,12 +93,8 @@ function aqiAdvice(level: AQIInfo["level"]): string {
 
 export async function getCoords(): Promise<{ lat: number; lon: number }> {
   const cached = cacheGet<{ lat: number; lon: number; timestamp: number }>(GPS_CACHE_KEY);
-  if (cached) {
-    console.log("GPS coords (cached):", cached.lat, cached.lon);
-    return { lat: cached.lat, lon: cached.lon };
-  }
-  const finish = (lat: number, lon: number, src: string) => {
-    console.log(`GPS coords (${src}):`, lat, lon);
+  if (cached) return { lat: cached.lat, lon: cached.lon };
+  const finish = (lat: number, lon: number) => {
     cacheSet(GPS_CACHE_KEY, { lat, lon, timestamp: Date.now() }, 60 * 60 * 1000);
     return { lat, lon };
   };
@@ -109,16 +105,16 @@ export async function getCoords(): Promise<{ lat: number; lon: number }> {
         (p) => { clearTimeout(t); locationDenied = false; resolve({ lat: p.coords.latitude, lon: p.coords.longitude }); },
         (err) => {
           clearTimeout(t);
-          console.warn("GPS denied/error:", err?.message);
+          if (import.meta.env.DEV) console.warn("GPS denied/error:", err?.message);
           if (err && err.code === 1) locationDenied = true;
           resolve(null);
         },
         { timeout: 10000, enableHighAccuracy: true, maximumAge: 600000 },
       );
     });
-    if (gps) return finish(gps.lat, gps.lon, "gps");
+    if (gps) return finish(gps.lat, gps.lon);
   }
-  return finish(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon, "fallback");
+  return finish(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon);
 }
 
 export async function fetchLocation(lat: number, lon: number, force = false): Promise<LocationInfo | null> {
@@ -130,7 +126,6 @@ export async function fetchLocation(lat: number, lon: number, force = false): Pr
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1&accept-language=hi,en`;
     const r = await fetch(url, { headers: { "accept-language": "hi,en" } });
     const j = await r.json();
-    console.log("Location API response:", j);
     const a = j.address ?? {};
     const info: LocationInfo = {
       city: a.city || a.town || a.village || a.county || a.suburb || j.name || "Unknown",
@@ -142,7 +137,7 @@ export async function fetchLocation(lat: number, lon: number, force = false): Pr
     cacheSet(LOC_CACHE_KEY, info, 60 * 60 * 1000);
     return info;
   } catch (e) {
-    console.error("Location fetch failed:", e);
+    if (import.meta.env.DEV) console.error("Location fetch failed:", e);
     return null;
   }
 }
@@ -155,10 +150,8 @@ export async function fetchWeather(force = false): Promise<Weather> {
   const { lat, lon } = await getCoords();
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m,weathercode,apparent_temperature&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Asia/Kolkata&forecast_days=7&t=${Date.now()}`;
-    console.log("Weather API request:", url);
     const r = await fetch(url);
     const j = await r.json();
-    console.log("Weather API response:", j);
     const c = j.current ?? {};
     const d = j.daily ?? {};
     const daily: DailyForecast[] = (d.time ?? []).map((date: string, i: number) => ({
@@ -182,7 +175,7 @@ export async function fetchWeather(force = false): Promise<Weather> {
     cacheSet(WEATHER_CACHE_KEY, w, 30 * 60 * 1000);
     return w;
   } catch (e) {
-    console.error("Weather fetch failed:", e);
+    if (import.meta.env.DEV) console.error("Weather fetch failed:", e);
     return {
       temperature: 28, feelsLike: 30, humidity: 60, rain: 0, windSpeed: 5,
       weatherCode: 1, lat, lon, fetchedAt: Date.now(), daily: [],
@@ -200,7 +193,6 @@ export async function fetchAQI(lat: number, lon: number, force = false): Promise
     const url = `https://api.waqi.info/feed/geo:${lat};${lon}/?token=${token}`;
     const r = await fetch(url);
     const j = await r.json();
-    console.log("AQI API response:", j);
     if (j.status !== "ok" || typeof j.data?.aqi !== "number") return null;
     const aqi = j.data.aqi as number;
     const level = aqiLevel(aqi);
@@ -214,7 +206,7 @@ export async function fetchAQI(lat: number, lon: number, force = false): Promise
     cacheSet(AQI_CACHE_KEY, info, 60 * 60 * 1000);
     return info;
   } catch (e) {
-    console.error("AQI fetch failed:", e);
+    if (import.meta.env.DEV) console.error("AQI fetch failed:", e);
     return null;
   }
 }
