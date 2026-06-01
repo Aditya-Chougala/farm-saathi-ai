@@ -8,19 +8,11 @@ const AQI_CACHE_KEY = "farmsmart_aqi";
 
 export const FALLBACK_COORDS = { lat: 15.3647, lon: 75.1240 }; // Hubballi, Karnataka
 
-async function ipLocation(): Promise<{ lat: number; lon: number } | null> {
-  try {
-    const r = await fetch("https://ipapi.co/json/");
-    const j = await r.json();
-    if (typeof j.latitude === "number" && typeof j.longitude === "number") {
-      console.log("IP location:", j.city, j.region, j.latitude, j.longitude);
-      return { lat: j.latitude, lon: j.longitude };
-    }
-  } catch (e) {
-    console.warn("IP location failed:", e);
-  }
-  return null;
-}
+// Set to true after the user explicitly denies geolocation. Surfaced to UI
+// so the home page can render an "Allow Location" CTA instead of silently
+// using fallback coordinates.
+export let locationDenied = false;
+export function resetLocationDenied() { locationDenied = false; }
 
 export interface DailyForecast {
   date: string;
@@ -112,17 +104,20 @@ export async function getCoords(): Promise<{ lat: number; lon: number }> {
   };
   if (typeof navigator !== "undefined" && navigator.geolocation) {
     const gps = await new Promise<{ lat: number; lon: number } | null>((resolve) => {
-      const t = setTimeout(() => resolve(null), 8500);
+      const t = setTimeout(() => resolve(null), 10500);
       navigator.geolocation.getCurrentPosition(
-        (p) => { clearTimeout(t); resolve({ lat: p.coords.latitude, lon: p.coords.longitude }); },
-        (err) => { clearTimeout(t); console.warn("GPS denied/error:", err?.message); resolve(null); },
-        { timeout: 8000, enableHighAccuracy: true, maximumAge: 600000 },
+        (p) => { clearTimeout(t); locationDenied = false; resolve({ lat: p.coords.latitude, lon: p.coords.longitude }); },
+        (err) => {
+          clearTimeout(t);
+          console.warn("GPS denied/error:", err?.message);
+          if (err && err.code === 1) locationDenied = true;
+          resolve(null);
+        },
+        { timeout: 10000, enableHighAccuracy: true, maximumAge: 600000 },
       );
     });
     if (gps) return finish(gps.lat, gps.lon, "gps");
   }
-  const ip = await ipLocation();
-  if (ip) return finish(ip.lat, ip.lon, "ip");
   return finish(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon, "fallback");
 }
 

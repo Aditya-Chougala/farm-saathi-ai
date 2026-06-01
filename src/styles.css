@@ -97,16 +97,14 @@
 
 @layer utilities {
   .farm-bg {
-    background-image: var(--farm-bg-image);
-    background-size: cover;
-    background-position: center;
+    background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 50%, #52B788 100%);
     background-attachment: fixed;
   }
   .farm-bg::before {
     content: "";
     position: fixed;
     inset: 0;
-    background: linear-gradient(180deg, oklch(0.99 0.01 95 / 0.7), oklch(0.94 0.04 110 / 0.85));
+    background: linear-gradient(180deg, oklch(0.99 0.01 95 / 0.55), oklch(0.94 0.04 110 / 0.75));
     z-index: -1;
     pointer-events: none;
   }
