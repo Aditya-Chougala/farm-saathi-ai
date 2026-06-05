@@ -63,7 +63,7 @@ function toMandi(rec: ApiRecord): RealMandiPrice {
   const unit: MandiPrice["unit"] = isVeg ? "kg" : "quintal";
   const allLangs: Record<Lang, string> = {
     en: commodity, hi: commodity, ta: commodity, kn: commodity,
-    bn: commodity, te: commodity, mr: commodity,
+    bn: commodity, te: commodity, mr: commodity, pa: commodity,
   };
   return {
     crop: commodity, hi: commodity, names: allLangs,
@@ -116,7 +116,7 @@ Return ONLY this JSON shape:
         const hi = p.commodityHindi || HINDI_NAMES[commodity] || commodity;
         const allLangs: Record<Lang, string> = {
           en: commodity, hi, ta: commodity, kn: commodity,
-          bn: commodity, te: commodity, mr: commodity,
+          bn: commodity, te: commodity, mr: commodity, pa: commodity,
         };
         const trend = p.trend ?? "stable";
         const pct = p.trendPercent ?? 0;

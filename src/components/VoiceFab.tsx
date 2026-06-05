@@ -4,7 +4,7 @@ import { useLang } from "@/i18n/LanguageContext";
 
 const LANG_MAP: Record<string, string> = {
   en: "en-IN", hi: "hi-IN", ta: "ta-IN", kn: "kn-IN",
-  bn: "bn-IN", te: "te-IN", mr: "mr-IN",
+  bn: "bn-IN", te: "te-IN", mr: "mr-IN", pa: "pa-IN",
 };
 
 export function VoiceFab() {

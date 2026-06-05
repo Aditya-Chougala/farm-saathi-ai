@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Upload, Loader2, Share2, MapPin, Bell, RotateCw, X } from "lucide-react";
+import { Camera, Upload, Loader as Loader2, Share2, MapPin, Bell, RotateCw, X } from "lucide-react";
 import { runEnsemble, type EnsembleVerdict } from "@/services/disease/ensembleEngine";
 import { getTreatment, type Treatment } from "@/services/disease/groqTreatmentService";
 import { diseaseHindi } from "@/constants/diseaseTranslations";
@@ -8,6 +8,7 @@ import { saveData, getData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
 import { shareDiseaseReport } from "@/utils/shareUtils";
+import { useVoiceInput, speak } from "@/hooks/useVoice";
 
 export const Route = createFileRoute("/disease")({
   head: () => ({
@@ -55,6 +56,19 @@ function DiseaseDetection() {
   const [verdict, setVerdict] = useState<EnsembleVerdict | null>(null);
   const [treatment, setTreatment] = useState<Treatment | null>(null);
   const [camOpen, setCamOpen] = useState(false);
+
+  useVoiceInput((transcript, voiceLang) => {
+    if (verdict) {
+      const msg = lang === "hi"
+        ? `${verdict.diseaseNameFormatted} है। ${treatment ? treatment.organicTreatment.steps[0] : ""}`
+        : `Detected ${verdict.diseaseNameFormatted}. ${treatment ? treatment.organicTreatment.steps[0] : ""}`;
+      speak(msg, voiceLang);
+    } else if (preview) {
+      speak(lang === "hi" ? "स्कैन बटन दबाएं" : "Press scan to analyze", voiceLang);
+    } else {
+      speak(lang === "hi" ? "पत्ती की फोटो लें" : "Take a leaf photo first", voiceLang);
+    }
+  });
 
   const handleUpload = () => {
     const input = document.createElement("input");

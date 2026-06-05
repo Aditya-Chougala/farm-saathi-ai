@@ -6,6 +6,8 @@ import { getData, saveData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
 import type { TKey } from "@/i18n/translations";
 import { contactSeller } from "@/utils/shareUtils";
+import { useVoiceInput, speak } from "@/hooks/useVoice";
+import { groqText } from "@/lib/groqApi";
 
 export const Route = createFileRoute("/market")({
   head: () => ({
@@ -22,9 +24,22 @@ type Tab = "sell" | "buy" | "equip" | "mandi";
 interface Listing { id: string; crop: string; qty: string; price: string; phone: string; location: string; date: number }
 
 function MarketPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [tab, setTab] = useState<Tab>("mandi");
   const tabKey: Record<Tab, TKey> = { mandi: "tabMandi", sell: "tabSell", buy: "tabBuy", equip: "tabEquip" };
+
+  useVoiceInput(async (transcript, voiceLang) => {
+    const crop = transcript.toLowerCase();
+    const sys = "You are an Indian agricultural market expert. Reply briefly.";
+    const user = `What is the current mandi price of ${crop} in India? Reply in 1-2 sentences in ${lang === "hi" ? "Hindi" : "English"}.`;
+    try {
+      const j = await groqText(sys, user);
+      const msg = typeof j === "string" ? j : JSON.stringify(j);
+      speak(msg.slice(0, 200), voiceLang);
+    } catch {
+      speak(lang === "hi" ? "भाव नहीं मिले" : "Could not fetch price", voiceLang);
+    }
+  });
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-1 glass-card rounded-2xl p-1">

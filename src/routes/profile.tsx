@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { User, MapPin, Sprout, Check, Database } from "lucide-react";
+import { User, MapPin, Sprout, Check, Database, Trash2, CalendarDays } from "lucide-react";
 import { getData, saveData } from "@/lib/db";
 import { diseaseHindi } from "@/constants/diseaseTranslations";
 import { useLang } from "@/i18n/LanguageContext";
+import type { DemoCrop } from "@/lib/demoResults";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/profile")({
 interface Farmer { name: string; location: string; landAcres: number }
 interface HistItem { id: string; date: number; imageThumb: string; cropType: string; diseaseName: string; severity: string; confidence: number }
 interface Reminder { id: string; due: number; disease: string; crop: string; done: boolean }
+interface Listing { id: string; crop: string; qty: string; price: string; phone: string; location: string; date: number }
 
 function ProfilePage() {
   const { t, lang } = useLang();
@@ -25,11 +27,17 @@ function ProfilePage() {
   const [edit, setEdit] = useState(false);
   const [history, setHistory] = useState<HistItem[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [selectedCrop, setSelectedCrop] = useState<DemoCrop | null>(null);
+  const [calendar, setCalendar] = useState<{ crop: string; sowingDate: number } | null>(null);
 
   useEffect(() => {
     setFarmer(getData<Farmer>("farmsmart_farmer") ?? { name: t("defaultFarmer"), location: "India", landAcres: 2 });
     setHistory(getData<HistItem[]>("farmsmart_disease_history") ?? []);
     setReminders(getData<Reminder[]>("farmsmart_reminders") ?? []);
+    setListings(getData<Listing[]>("farmsmart_listings") ?? []);
+    setSelectedCrop(getData<DemoCrop[]>("farmsmart_last_crop_result")?.[0] ?? null);
+    setCalendar(getData<{ crop: string; sowingDate: number }>("farmsmart_calendar"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -38,8 +46,12 @@ function ProfilePage() {
     const next = reminders.map((r) => r.id === id ? { ...r, done: true } : r);
     setReminders(next); saveData("farmsmart_reminders", next);
   };
+  const deleteListing = (id: string) => {
+    const next = listings.filter((l) => l.id !== id);
+    setListings(next); saveData("farmsmart_listings", next);
+  };
 
-  const dateLocale: Record<string, string> = { en: "en-IN", hi: "hi-IN", ta: "ta-IN", kn: "kn-IN", bn: "bn-IN", te: "te-IN", mr: "mr-IN" };
+  const dateLocale: Record<string, string> = { en: "en-IN", hi: "hi-IN", ta: "ta-IN", kn: "kn-IN", bn: "bn-IN", te: "te-IN", mr: "mr-IN", pa: "pa-IN" };
 
   return (
     <div className="space-y-4">
@@ -115,6 +127,46 @@ function ProfilePage() {
           </div>
         )}
       </section>
+
+      {selectedCrop && (
+        <section className="glass-card rounded-2xl p-4">
+          <h3 className="font-bold text-primary mb-3">Selected Crop / चुनी हुई फसल</h3>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{selectedCrop.cropEmoji}</span>
+            <div className="flex-1">
+              <div className="font-bold text-primary">{selectedCrop.cropName}</div>
+              <div className="text-xs text-muted-foreground">
+                {selectedCrop.timeline.growingDays} days • ROI {selectedCrop.financial.roi}%
+              </div>
+              {calendar && (
+                <div className="text-xs text-success flex items-center gap-1 mt-1">
+                  <CalendarDays className="w-3 h-3" />
+                  Sown {new Date(calendar.sowingDate).toLocaleDateString(dateLocale[lang] ?? "en-IN")}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {listings.length > 0 && (
+        <section className="glass-card rounded-2xl p-4">
+          <h3 className="font-bold text-primary mb-3">My Listings / मेरी लिस्टिंग</h3>
+          <div className="space-y-2">
+            {listings.map((l) => (
+              <div key={l.id} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-secondary/40">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm">{l.crop} • {l.qty}</div>
+                  <div className="text-xs text-muted-foreground">{l.price} • {l.location}</div>
+                </div>
+                <button onClick={() => deleteListing(l.id)} className="p-2 rounded-lg bg-destructive/20 text-destructive">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="glass-card rounded-2xl p-4 text-center text-xs text-muted-foreground">
         <Database className="w-5 h-5 mx-auto text-success mb-1" />
