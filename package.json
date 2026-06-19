@@ -4,10 +4,10 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "bun run dev",
-    "build": "bun run build",
-    "start": "bun run start",
-    "preview": "bun run preview",
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
+    "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
