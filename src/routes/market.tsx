@@ -124,9 +124,19 @@ function MandiTab() {
       {loading ? (
         <div className="py-8 text-center text-sm text-muted-foreground">Loading mandi prices…</div>
       ) : error || prices.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground">
-          Mandi data unavailable right now. Please try again later.
+        <div className="py-6 text-center text-sm text-muted-foreground space-y-3">
+          <div>{lang === "hi" ? "मंडी डेटा उपलब्ध नहीं है।" : "Mandi data unavailable right now."}</div>
+          <button
+            type="button"
+            onClick={tryAiEstimate}
+            disabled={aiLoading}
+            className="min-touch px-4 gradient-primary text-primary-foreground rounded-xl text-xs font-bold disabled:opacity-60"
+          >
+            {aiLoading ? (lang === "hi" ? "लोड हो रहा है…" : "Loading…") : (lang === "hi" ? "🤖 AI अनुमान प्राप्त करें" : "🤖 Get AI estimate")}
+          </button>
+          {aiError && <div className="text-[11px] text-destructive">{aiError}</div>}
         </div>
+
       ) : (
         <div className="space-y-1">
           {prices.map((m, i) => (
