@@ -64,20 +64,40 @@ function MandiTab() {
   const [prices, setPrices] = useState<RealMandiPrice[]>([]);
   const [meta, setMeta] = useState<{ source: "agmarknet" | "ai" | "cached"; updatedAt: number; stale: boolean; location: string; disclaimer?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [error, setError] = useState(false);
+
+  const applyResult = (res: Awaited<ReturnType<typeof fetchRealMandiPrices>>) => {
+    if (res && res.prices.length) {
+      setPrices(res.prices);
+      setMeta({ source: res.source, updatedAt: res.updatedAt, stale: res.stale, location: `${res.district}, ${res.state}`, disclaimer: res.disclaimer });
+      setError(false);
+    } else {
+      setError(true);
+    }
+  };
 
   useEffect(() => {
     fetchRealMandiPrices()
-      .then((res) => {
-        if (res && res.prices.length) {
-          setPrices(res.prices);
-          setMeta({ source: res.source, updatedAt: res.updatedAt, stale: res.stale, location: `${res.district}, ${res.state}`, disclaimer: res.disclaimer });
-        } else {
-          setError(true);
-        }
-      })
+      .then(applyResult)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  const tryAiEstimate = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const res = await fetchRealMandiPrices(true, { allowAiFallback: true });
+      applyResult(res);
+      if (!res || !res.prices.length) setAiError(lang === "hi" ? "AI सेवा उपलब्ध नहीं है।" : "AI service is currently unavailable.");
+    } catch {
+      setAiError(lang === "hi" ? "AI सेवा उपलब्ध नहीं है।" : "AI service is currently unavailable.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const trendIcon = {
     up: <TrendingUp className="w-4 h-4 text-success" />,
@@ -100,12 +120,23 @@ function MandiTab() {
           </span>
         )}
       </div>
+
       {loading ? (
         <div className="py-8 text-center text-sm text-muted-foreground">Loading mandi prices…</div>
       ) : error || prices.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground">
-          Mandi data unavailable right now. Please try again later.
+        <div className="py-6 text-center text-sm text-muted-foreground space-y-3">
+          <div>{lang === "hi" ? "मंडी डेटा उपलब्ध नहीं है।" : "Mandi data unavailable right now."}</div>
+          <button
+            type="button"
+            onClick={tryAiEstimate}
+            disabled={aiLoading}
+            className="min-touch px-4 gradient-primary text-primary-foreground rounded-xl text-xs font-bold disabled:opacity-60"
+          >
+            {aiLoading ? (lang === "hi" ? "लोड हो रहा है…" : "Loading…") : (lang === "hi" ? "🤖 AI अनुमान प्राप्त करें" : "🤖 Get AI estimate")}
+          </button>
+          {aiError && <div className="text-[11px] text-destructive">{aiError}</div>}
         </div>
+
       ) : (
         <div className="space-y-1">
           {prices.map((m, i) => (
