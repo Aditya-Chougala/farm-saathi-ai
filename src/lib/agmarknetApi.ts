@@ -143,7 +143,10 @@ Return ONLY this JSON shape:
 
 let inflight: Promise<RealMandiResult | null> | null = null;
 
-export async function fetchRealMandiPrices(force = false): Promise<RealMandiResult | null> {
+export async function fetchRealMandiPrices(
+  force = false,
+  opts: { allowAiFallback?: boolean } = {},
+): Promise<RealMandiResult | null> {
   if (!force) {
     const cached = cacheGet<RealMandiResult>(CACHE_KEY);
     if (cached) return { ...cached, stale: false };
@@ -170,12 +173,15 @@ export async function fetchRealMandiPrices(force = false): Promise<RealMandiResu
       saveData(RAW_KEY, result);
       return result;
     } catch (e) {
-      if (import.meta.env.DEV) console.error("Mandi fetch failed, trying AI fallback:", e);
-      const ai = await fetchGroqEstimate(state, district);
-      if (ai) {
-        cacheSet(CACHE_KEY, ai, TTL_MS);
-        saveData(RAW_KEY, ai);
-        return ai;
+      if (import.meta.env.DEV) console.warn("Mandi fetch failed:", e);
+      // Only call AI as a fallback when the user explicitly opted in.
+      if (opts.allowAiFallback) {
+        const ai = await fetchGroqEstimate(state, district);
+        if (ai) {
+          cacheSet(CACHE_KEY, ai, TTL_MS);
+          saveData(RAW_KEY, ai);
+          return ai;
+        }
       }
       const raw = getData<RealMandiResult>(RAW_KEY);
       if (raw) return { ...raw, stale: true, source: raw.source ?? "cached" };
