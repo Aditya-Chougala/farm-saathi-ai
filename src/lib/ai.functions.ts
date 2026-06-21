@@ -47,7 +47,7 @@ export const groqChatFn = createServerFn({ method: "POST" })
   .inputValidator((d: { body: unknown }) => d)
   .handler(async ({ data }) => {
     const key = process.env.GROQ_API_KEY;
-    if (!key) throw new Error("missing_groq_key");
+    if (!key) return { error: "missing_groq_key", status: 0 };
     let delay = 2000;
     for (let i = 0; i < 3; i++) {
       const r = await fetch(GROQ_URL, {
@@ -62,7 +62,7 @@ export const groqChatFn = createServerFn({ method: "POST" })
         continue;
       }
       const txt = await r.text().catch(() => "");
-      throw new Error(`groq_${r.status}: ${txt.slice(0, 80)}`);
+      return { error: `groq_${r.status}`, status: r.status, detail: txt.slice(0, 200) };
     }
-    throw new Error("groq_retries_exhausted");
+    return { error: "groq_retries_exhausted", status: 0 };
   });
