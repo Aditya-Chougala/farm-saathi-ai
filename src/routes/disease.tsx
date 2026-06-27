@@ -186,6 +186,11 @@ function DiseaseDetection() {
         )}
       </div>
 
+      {scanError && (
+        <div className="glass-card rounded-2xl p-4 border border-destructive/40 bg-destructive/5">
+          <p className="text-sm text-destructive">{scanError}</p>
+        </div>
+      )}
       {verdict && <VerdictCard verdict={verdict} />}
       {treatment && <TreatmentCard treatment={treatment} />}
 
