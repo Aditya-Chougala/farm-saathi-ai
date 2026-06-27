@@ -56,6 +56,7 @@ function DiseaseDetection() {
   const [loading, setLoading] = useState(false);
   const [verdict, setVerdict] = useState<EnsembleVerdict | null>(null);
   const [treatment, setTreatment] = useState<Treatment | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [camOpen, setCamOpen] = useState(false);
 
   useVoiceInput((transcript, voiceLang) => {
