@@ -1,4 +1,4 @@
-import { geminiVision } from "@/lib/geminiApi";
+import { analyzeAgriImage } from "@/lib/geminiApi";
 import { PLANTVILLAGE_LABELS } from "@/constants/plantvillageLabels";
 
 export interface VisionResult {
@@ -8,31 +8,31 @@ export interface VisionResult {
   severity: "mild" | "moderate" | "severe";
 }
 
-const PROMPT = `You are a plant pathology expert. Analyze this leaf image and identify any disease.
-Respond ONLY with valid JSON, no markdown:
-{
-  "label": "<one PlantVillage style label like Tomato___Late_blight>",
-  "diseaseName": "<short readable disease name>",
-  "confidence": <0..1 number>,
-  "severity": "mild" | "moderate" | "severe"
+export class NonAgriculturalImageError extends Error {
+  detectedObject: string;
+  constructor(detectedObject: string) {
+    super("This image does not appear to be a plant, crop, soil sample, or agricultural disease.");
+    this.name = "NonAgriculturalImageError";
+    this.detectedObject = detectedObject;
+  }
 }
-Allowed labels: ${PLANTVILLAGE_LABELS.join(", ")}`;
 
-function parse(text: string): VisionResult {
-  const cleaned = text.replace(/```json|```/g, "").trim();
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  if (start < 0 || end < 0) throw new Error("no_json");
-  const obj = JSON.parse(cleaned.slice(start, end + 1));
-  return {
-    label: String(obj.label || "Tomato___Early_blight"),
-    confidence: Number(obj.confidence ?? 0.6),
-    diseaseName: String(obj.diseaseName || obj.label || "Unknown"),
-    severity: (obj.severity as VisionResult["severity"]) || "moderate",
+const ALLOWED = `Allowed PlantVillage labels (pick the closest): ${PLANTVILLAGE_LABELS.join(", ")}`;
+
+export async function geminiDetect(base64DataUrl: string): Promise<VisionResult> {
+  const result = await analyzeAgriImage(base64DataUrl, "disease", ALLOWED);
+  if (!result.is_agricultural) {
+    throw new NonAgriculturalImageError(result.detected_object);
+  }
+  const ex = (result.extra ?? {}) as {
+    label?: string;
+    diseaseName?: string;
+    severity?: VisionResult["severity"];
   };
-}
-
-export async function geminiDetect(base64: string): Promise<VisionResult> {
-  const text = await geminiVision(base64, PROMPT);
-  return parse(text);
+  return {
+    label: String(ex.label || "Tomato___Early_blight"),
+    confidence: Number(result.confidence ?? 0.6),
+    diseaseName: String(ex.diseaseName || result.diagnosis || "Unknown"),
+    severity: (ex.severity as VisionResult["severity"]) || "moderate",
+  };
 }
