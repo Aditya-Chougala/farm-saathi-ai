@@ -105,6 +105,9 @@ function DiseaseDetection() {
   const scan = async () => {
     if (!preview) return;
     setLoading(true);
+    setScanError(null);
+    setVerdict(null);
+    setTreatment(null);
     try {
       const v = await runEnsemble(preview);
       setVerdict(v);
@@ -121,10 +124,19 @@ function DiseaseDetection() {
       saveData("farmsmart_disease_history", [item, ...hist].slice(0, 5));
       const tr = await getTreatment(v.label, v.severity);
       setTreatment(tr);
+    } catch (e) {
+      if (e instanceof NonAgriculturalImageError) {
+        setScanError(
+          `This image does not appear to be a plant, crop, soil sample, or agricultural disease (detected: ${e.detectedObject}). Please upload a clear leaf photo.`,
+        );
+      } else {
+        setScanError("Could not analyze the image. Please try again with a clearer leaf photo.");
+      }
     } finally {
       setLoading(false);
     }
   };
+
 
   const shareWA = () => {
     if (!verdict) return;
