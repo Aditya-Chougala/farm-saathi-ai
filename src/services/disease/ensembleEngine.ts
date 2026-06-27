@@ -1,6 +1,6 @@
 // TensorFlow.js was removed from the ensemble — its bundle (>10MB) caused
 // Cloudflare Workers build timeouts. Detection now uses Gemini + Groq Vision only.
-import { geminiDetect, type VisionResult } from "./geminiDiseaseService";
+import { geminiDetect, NonAgriculturalImageError, type VisionResult } from "./geminiDiseaseService";
 import { groqVisionDetect } from "./groqVisionService";
 import { stripBase64Prefix } from "@/lib/geminiApi";
 import { formatDiseaseName, getCropFromLabel } from "@/constants/plantvillageLabels";
@@ -33,6 +33,12 @@ export async function runEnsemble(base64DataUrl: string): Promise<EnsembleVerdic
     geminiDetect(base64DataUrl),
     groqVisionDetect(clean),
   ]);
+
+  // If Gemini explicitly flagged the image as non-agricultural, refuse to diagnose.
+  if (gemRes.status === "rejected" && gemRes.reason instanceof NonAgriculturalImageError) {
+    throw gemRes.reason;
+  }
+
 
   const sources: AISource[] = [
     { name: "tensorflow", ok: false, error: "disabled" },

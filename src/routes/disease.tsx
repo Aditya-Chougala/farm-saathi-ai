@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Upload, Loader as Loader2, Share2, MapPin, Bell, RotateCw, X } from "lucide-react";
 import { runEnsemble, type EnsembleVerdict } from "@/services/disease/ensembleEngine";
+import { NonAgriculturalImageError } from "@/services/disease/geminiDiseaseService";
 import { getTreatment, type Treatment } from "@/services/disease/groqTreatmentService";
 import { diseaseHindi } from "@/constants/diseaseTranslations";
 import { saveData, getData } from "@/lib/db";
@@ -55,6 +56,7 @@ function DiseaseDetection() {
   const [loading, setLoading] = useState(false);
   const [verdict, setVerdict] = useState<EnsembleVerdict | null>(null);
   const [treatment, setTreatment] = useState<Treatment | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [camOpen, setCamOpen] = useState(false);
 
   useVoiceInput((transcript, voiceLang) => {
@@ -103,6 +105,9 @@ function DiseaseDetection() {
   const scan = async () => {
     if (!preview) return;
     setLoading(true);
+    setScanError(null);
+    setVerdict(null);
+    setTreatment(null);
     try {
       const v = await runEnsemble(preview);
       setVerdict(v);
@@ -119,10 +124,19 @@ function DiseaseDetection() {
       saveData("farmsmart_disease_history", [item, ...hist].slice(0, 5));
       const tr = await getTreatment(v.label, v.severity);
       setTreatment(tr);
+    } catch (e) {
+      if (e instanceof NonAgriculturalImageError) {
+        setScanError(
+          `This image does not appear to be a plant, crop, soil sample, or agricultural disease (detected: ${e.detectedObject}). Please upload a clear leaf photo.`,
+        );
+      } else {
+        setScanError("Could not analyze the image. Please try again with a clearer leaf photo.");
+      }
     } finally {
       setLoading(false);
     }
   };
+
 
   const shareWA = () => {
     if (!verdict) return;
@@ -172,6 +186,11 @@ function DiseaseDetection() {
         )}
       </div>
 
+      {scanError && (
+        <div className="glass-card rounded-2xl p-4 border border-destructive/40 bg-destructive/5">
+          <p className="text-sm text-destructive">{scanError}</p>
+        </div>
+      )}
       {verdict && <VerdictCard verdict={verdict} />}
       {treatment && <TreatmentCard treatment={treatment} />}
 
