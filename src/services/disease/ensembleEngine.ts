@@ -1,6 +1,6 @@
 // TensorFlow.js was removed from the ensemble — its bundle (>10MB) caused
 // Cloudflare Workers build timeouts. Detection now uses Gemini + Groq Vision only.
-import { geminiDetect, type VisionResult } from "./geminiDiseaseService";
+import { geminiDetect, NonAgriculturalImageError, type VisionResult } from "./geminiDiseaseService";
 import { groqVisionDetect } from "./groqVisionService";
 import { stripBase64Prefix } from "@/lib/geminiApi";
 import { formatDiseaseName, getCropFromLabel } from "@/constants/plantvillageLabels";
