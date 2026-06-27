@@ -34,6 +34,12 @@ export async function runEnsemble(base64DataUrl: string): Promise<EnsembleVerdic
     groqVisionDetect(clean),
   ]);
 
+  // If Gemini explicitly flagged the image as non-agricultural, refuse to diagnose.
+  if (gemRes.status === "rejected" && gemRes.reason instanceof NonAgriculturalImageError) {
+    throw gemRes.reason;
+  }
+
+
   const sources: AISource[] = [
     { name: "tensorflow", ok: false, error: "disabled" },
     { name: "gemini", ok: gemRes.status === "fulfilled", result: gemRes.status === "fulfilled" ? gemRes.value : undefined, error: gemRes.status === "rejected" ? String(gemRes.reason) : undefined },
