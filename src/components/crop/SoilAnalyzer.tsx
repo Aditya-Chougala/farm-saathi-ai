@@ -1,6 +1,6 @@
 import { Camera, Upload, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { geminiVision } from "@/lib/geminiApi";
+import { analyzeAgriImage, GeminiError } from "@/lib/geminiApi";
 import { useLang } from "@/i18n/LanguageContext";
 import { SOIL_TYPES } from "@/lib/demoResults";
 
@@ -10,14 +10,13 @@ export interface SoilAnalysis {
   ph: number;
   nutrients: { N: string; P: string; K: string };
   imageDataUrl: string;
+  confidence: number;
+  detectedObject: string;
 }
 
 interface Props {
   onComplete: (s: SoilAnalysis) => void;
 }
-
-const PROMPT = `Analyze this soil photo. Reply ONLY raw JSON:
-{"soilType":"<one of: Red soil, Black soil, Sandy soil, Loamy soil, Clay soil>","ph":<number 5.5..8.5>,"nutrients":{"N":"low|medium|high","P":"low|medium|high","K":"low|medium|high"}}`;
 
 export function SoilAnalyzer({ onComplete }: Props) {
   const { t } = useLang();
@@ -26,10 +25,12 @@ export function SoilAnalyzer({ onComplete }: Props) {
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [confidence, setConfidence] = useState<number | null>(null);
 
   const handleFile = (f: File | undefined) => {
     if (!f) return;
     setErr(null);
+    setConfidence(null);
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(f);
@@ -40,31 +41,45 @@ export function SoilAnalyzer({ onComplete }: Props) {
     setLoading(true);
     setErr(null);
     try {
-      const text = await geminiVision(preview, PROMPT);
-      const cleaned = text.replace(/```json|```/g, "").trim();
-      const s = cleaned.indexOf("{");
-      const e = cleaned.lastIndexOf("}");
-      const obj = JSON.parse(cleaned.slice(s, e + 1));
-      const found = SOIL_TYPES.find((x) => x.en.toLowerCase() === String(obj.soilType).toLowerCase()) ?? SOIL_TYPES[3];
+      const result = await analyzeAgriImage(preview, "soil");
+      setConfidence(result.confidence);
+      if (!result.is_agricultural) {
+        setErr(
+          result.diagnosis ||
+            "This image does not appear to be a plant, crop, soil sample, or agricultural disease.",
+        );
+        return;
+      }
+      const ex = (result.extra ?? {}) as {
+        soilType?: string;
+        ph?: number;
+        nutrients?: { N: string; P: string; K: string };
+      };
+      const found =
+        SOIL_TYPES.find((x) => x.en.toLowerCase() === String(ex.soilType ?? "").toLowerCase()) ??
+        SOIL_TYPES[3];
       onComplete({
         soilType: found.en,
         soilTypeHindi: found.hi,
-        ph: Number(obj.ph) || 6.8,
-        nutrients: obj.nutrients ?? { N: "medium", P: "medium", K: "medium" },
+        ph: Number(ex.ph) || 6.8,
+        nutrients: ex.nutrients ?? { N: "medium", P: "medium", K: "medium" },
         imageDataUrl: preview,
+        confidence: result.confidence,
+        detectedObject: result.detected_object,
       });
-    } catch {
-      onComplete({
-        soilType: "Loamy soil",
-        soilTypeHindi: "दोमट मिट्टी",
-        ph: 6.8,
-        nutrients: { N: "medium", P: "medium", K: "medium" },
-        imageDataUrl: preview,
-      });
+    } catch (e) {
+      const msg =
+        e instanceof GeminiError && e.code === "missing_gemini_key"
+          ? "AI service is not configured. Please add a Gemini API key to enable soil analysis."
+          : e instanceof GeminiError && e.status === 429
+            ? "AI service is busy. Please try again in a moment."
+            : "Could not analyze the image. Please try a clearer photo of soil.";
+      setErr(msg);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-4">
