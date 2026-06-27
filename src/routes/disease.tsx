@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Upload, Loader as Loader2, Share2, MapPin, Bell, RotateCw, X } from "lucide-react";
 import { runEnsemble, type EnsembleVerdict } from "@/services/disease/ensembleEngine";
+import { NonAgriculturalImageError } from "@/services/disease/geminiDiseaseService";
 import { getTreatment, type Treatment } from "@/services/disease/groqTreatmentService";
 import { diseaseHindi } from "@/constants/diseaseTranslations";
 import { saveData, getData } from "@/lib/db";
