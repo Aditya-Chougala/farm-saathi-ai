@@ -120,6 +120,11 @@ export function SoilAnalyzer({ onComplete }: Props) {
             {t("analyzeSoil")}
           </button>
         )}
+        {confidence !== null && !err && (
+          <p className="text-xs text-muted-foreground mt-2">
+            AI confidence: <b>{Math.round(confidence * 100)}%</b>
+          </p>
+        )}
         {err && <p className="text-destructive text-xs mt-2">{err}</p>}
       </div>
     </div>
