@@ -1,6 +1,6 @@
 import { Camera, Upload, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { analyzeAgriImage, GeminiError } from "@/lib/geminiApi";
+import { analyzeAgriImage, describeAiError, testGeminiConnection } from "@/lib/geminiApi";
 import { useLang } from "@/i18n/LanguageContext";
 import { SOIL_TYPES } from "@/lib/demoResults";
 
@@ -26,13 +26,24 @@ export function SoilAnalyzer({ onComplete }: Props) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number | null>(null);
+  const [rawTest, setRawTest] = useState<string | null>(null);
 
   const handleFile = (f: File | undefined) => {
     if (!f) return;
+    console.info("[FarmSmartAI] image selected", { feature: "soil", name: f.name, type: f.type, size: f.size });
     setErr(null);
     setConfidence(null);
+    setRawTest(null);
     const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      console.info("[FarmSmartAI] image processed", { feature: "soil", dataUrlChars: dataUrl.length });
+      setPreview(dataUrl);
+    };
+    reader.onerror = () => {
+      console.error("[FarmSmartAI] failure reason", { feature: "soil", reason: "FileReader failed" });
+      setErr("Invalid image: the selected file could not be read.");
+    };
     reader.readAsDataURL(f);
   };
 
@@ -41,6 +52,7 @@ export function SoilAnalyzer({ onComplete }: Props) {
     setLoading(true);
     setErr(null);
     try {
+      console.info("[FarmSmartAI] API request started", { feature: "soil-analysis" });
       const result = await analyzeAgriImage(preview, "soil");
       setConfidence(result.confidence);
       if (!result.is_agricultural) {
@@ -55,9 +67,13 @@ export function SoilAnalyzer({ onComplete }: Props) {
         ph?: number;
         nutrients?: { N: string; P: string; K: string };
       };
+      if (!ex.soilType) throw new Error("Invalid response: Gemini did not return soilType.");
+      if (!Number.isFinite(Number(ex.ph))) throw new Error("Invalid response: Gemini did not return a numeric pH.");
+      if (!ex.nutrients?.N || !ex.nutrients?.P || !ex.nutrients?.K) throw new Error("Invalid response: Gemini did not return N/P/K nutrients.");
       const found =
-        SOIL_TYPES.find((x) => x.en.toLowerCase() === String(ex.soilType ?? "").toLowerCase()) ??
-        SOIL_TYPES[3];
+        SOIL_TYPES.find((x) => x.en.toLowerCase() === String(ex.soilType).toLowerCase());
+      if (!found) throw new Error(`Invalid response: unsupported soil type "${String(ex.soilType)}".`);
+      console.info("[FarmSmartAI] parsed result", { feature: "soil", result });
       onComplete({
         soilType: found.en,
         soilTypeHindi: found.hi,
@@ -68,12 +84,26 @@ export function SoilAnalyzer({ onComplete }: Props) {
         detectedObject: result.detected_object,
       });
     } catch (e) {
-      const msg =
-        e instanceof GeminiError && e.code === "missing_gemini_key"
-          ? "AI service is not configured. Please add a Gemini API key to enable soil analysis."
-          : e instanceof GeminiError && e.status === 429
-            ? "AI service is busy. Please try again in a moment."
-            : "Could not analyze the image. Please try a clearer photo of soil.";
+      const msg = describeAiError(e);
+      console.error("[FarmSmartAI] failure reason", { feature: "soil", error: msg });
+      setErr(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testConnection = async () => {
+    if (!preview) return;
+    setLoading(true);
+    setErr(null);
+    setRawTest(null);
+    try {
+      const res = await testGeminiConnection(preview);
+      setRawTest(res.text || res.raw || "No text returned");
+      console.info("[FarmSmartAI] parsed result", { feature: "gemini-test", raw: res.text });
+    } catch (e) {
+      const msg = describeAiError(e);
+      console.error("[FarmSmartAI] failure reason", { feature: "gemini-test", error: msg });
       setErr(msg);
     } finally {
       setLoading(false);
@@ -114,11 +144,17 @@ export function SoilAnalyzer({ onComplete }: Props) {
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
 
         {preview && (
-          <button onClick={analyze} disabled={loading}
-            className="mt-3 w-full min-touch bg-accent text-accent-foreground rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-            {t("analyzeSoil")}
-          </button>
+          <div className="mt-3 grid gap-2">
+            <button onClick={analyze} disabled={loading}
+              className="w-full min-touch bg-accent text-accent-foreground rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+              {t("analyzeSoil")}
+            </button>
+            <button onClick={testConnection} disabled={loading}
+              className="w-full min-touch bg-secondary text-secondary-foreground rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+              Test AI Connection
+            </button>
+          </div>
         )}
         {confidence !== null && !err && (
           <p className="text-xs text-muted-foreground mt-2">
@@ -126,6 +162,11 @@ export function SoilAnalyzer({ onComplete }: Props) {
           </p>
         )}
         {err && <p className="text-destructive text-xs mt-2">{err}</p>}
+        {rawTest && (
+          <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-secondary/60 p-2 text-[10px] whitespace-pre-wrap break-words">
+            {rawTest}
+          </pre>
+        )}
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import { stripBase64Prefix } from "@/lib/geminiApi";
 import { formatDiseaseName, getCropFromLabel } from "@/constants/plantvillageLabels";
 
 export interface AISource {
-  name: "tensorflow" | "gemini" | "groq_vision";
+  name: "gemini" | "groq_vision";
   ok: boolean;
   result?: VisionResult;
   error?: string;
@@ -24,7 +24,7 @@ export interface EnsembleVerdict {
   sources: AISource[];
 }
 
-const WEIGHTS = { tensorflow: 0, gemini: 0.55, groq_vision: 0.45 };
+const WEIGHTS = { gemini: 0.55, groq_vision: 0.45 };
 
 export async function runEnsemble(base64DataUrl: string): Promise<EnsembleVerdict> {
   const clean = stripBase64Prefix(base64DataUrl);
@@ -34,24 +34,17 @@ export async function runEnsemble(base64DataUrl: string): Promise<EnsembleVerdic
     groqVisionDetect(clean),
   ]);
 
-  // If Gemini explicitly flagged the image as non-agricultural, refuse to diagnose.
+  // If either vision model explicitly flagged the image as non-agricultural, refuse to diagnose.
   if (gemRes.status === "rejected" && gemRes.reason instanceof NonAgriculturalImageError) {
     throw gemRes.reason;
   }
+  if (groqRes.status === "rejected" && groqRes.reason instanceof NonAgriculturalImageError) throw groqRes.reason;
 
 
   const sources: AISource[] = [
-    { name: "tensorflow", ok: false, error: "disabled" },
     { name: "gemini", ok: gemRes.status === "fulfilled", result: gemRes.status === "fulfilled" ? gemRes.value : undefined, error: gemRes.status === "rejected" ? String(gemRes.reason) : undefined },
     { name: "groq_vision", ok: groqRes.status === "fulfilled", result: groqRes.status === "fulfilled" ? groqRes.value : undefined, error: groqRes.status === "rejected" ? String(groqRes.reason) : undefined },
   ];
-
-  if (!sources[1].ok && sources[2].ok && sources[2].result) {
-    sources[1] = { name: "gemini", ok: true, result: { ...sources[2].result, confidence: Math.max(0, sources[2].result.confidence - 0.05) } };
-  }
-  if (!sources[2].ok && sources[1].ok && sources[1].result) {
-    sources[2] = { name: "groq_vision", ok: true, result: { ...sources[1].result, confidence: Math.max(0, sources[1].result.confidence - 0.05) } };
-  }
 
   const tally = new Map<string, number>();
   for (const s of sources) {
@@ -67,11 +60,7 @@ export async function runEnsemble(base64DataUrl: string): Promise<EnsembleVerdic
   }
 
   if (!topLabel) {
-    return {
-      label: "Tomato___healthy", diseaseName: "Unknown", diseaseNameFormatted: "Unable to detect",
-      cropType: "Unknown", severity: "mild", confidence: 0, agreementCount: 0,
-      consensus: "uncertain", sources,
-    };
+    throw new Error(`No AI diagnosis returned. Gemini: ${sources[0].error || "no result"}; Groq: ${sources[1].error || "no result"}`);
   }
 
   const okSources = sources.filter((s) => s.ok && s.result);

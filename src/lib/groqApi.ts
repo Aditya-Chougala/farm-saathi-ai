@@ -2,7 +2,13 @@
 import { groqChatFn } from "./ai.functions";
 
 async function callGroq(body: unknown): Promise<any> {
-  return groqChatFn({ data: { body } });
+  const result = await groqChatFn({ data: { body } });
+  if (result && typeof result === "object" && "error" in result) {
+    const err = new Error(`${String(result.error)}${"detail" in result && result.detail ? `: ${String(result.detail)}` : ""}`);
+    err.name = String(result.error);
+    throw err;
+  }
+  return result;
 }
 
 function extractJson(text: string): any {
@@ -41,9 +47,8 @@ export async function groqText(systemPrompt: string, userPrompt: string): Promis
 }
 
 const VISION_MODELS = [
-  "llama-3.2-11b-vision-preview",
-  "llama-3.2-90b-vision-preview",
   "meta-llama/llama-4-scout-17b-16e-instruct",
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
 ];
 
 export async function groqVision(base64NoPrefix: string, prompt: string): Promise<string> {
@@ -64,7 +69,9 @@ export async function groqVision(base64NoPrefix: string, prompt: string): Promis
         temperature: 0.2,
         max_tokens: 512,
       });
-      return j.choices?.[0]?.message?.content ?? "";
+      const content = j.choices?.[0]?.message?.content ?? "";
+      if (!content) throw new Error("groq_empty_response");
+      return content;
     } catch (e) {
       lastErr = e;
     }

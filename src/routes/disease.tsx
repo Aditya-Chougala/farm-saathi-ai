@@ -4,6 +4,7 @@ import { Camera, Upload, Loader as Loader2, Share2, MapPin, Bell, RotateCw, X } 
 import { runEnsemble, type EnsembleVerdict } from "@/services/disease/ensembleEngine";
 import { NonAgriculturalImageError } from "@/services/disease/geminiDiseaseService";
 import { getTreatment, type Treatment } from "@/services/disease/groqTreatmentService";
+import { describeAiError } from "@/lib/geminiApi";
 import { diseaseHindi } from "@/constants/diseaseTranslations";
 import { saveData, getData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
@@ -57,6 +58,7 @@ function DiseaseDetection() {
   const [verdict, setVerdict] = useState<EnsembleVerdict | null>(null);
   const [treatment, setTreatment] = useState<Treatment | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [treatmentError, setTreatmentError] = useState<string | null>(null);
   const [camOpen, setCamOpen] = useState(false);
 
   useVoiceInput((transcript, voiceLang) => {
@@ -93,12 +95,16 @@ function DiseaseDetection() {
 
   const loadFile = async (file: File) => {
     try {
+      console.info("[FarmSmartAI] image selected", { feature: "disease", name: file.name, type: file.type, size: file.size });
       const dataUrl = await fileToResizedDataUrl(file, 512);
+      console.info("[FarmSmartAI] image processed", { feature: "disease", dataUrlChars: dataUrl.length });
       setPreview(dataUrl);
       setVerdict(null);
       setTreatment(null);
+      setTreatmentError(null);
     } catch (e) {
-      console.error("loadFile failed", e);
+      console.error("[FarmSmartAI] failure reason", { feature: "disease", error: e });
+      setScanError("Invalid image: the selected file could not be processed.");
     }
   };
 
@@ -106,10 +112,13 @@ function DiseaseDetection() {
     if (!preview) return;
     setLoading(true);
     setScanError(null);
+    setTreatmentError(null);
     setVerdict(null);
     setTreatment(null);
     try {
+      console.info("[FarmSmartAI] API request started", { feature: "disease-analysis" });
       const v = await runEnsemble(preview);
+      console.info("[FarmSmartAI] parsed result", { feature: "disease", result: v });
       setVerdict(v);
       const hist = (getData<HistoryItem[]>("farmsmart_disease_history") ?? []) as HistoryItem[];
       const item: HistoryItem = {
@@ -122,15 +131,24 @@ function DiseaseDetection() {
         confidence: v.confidence,
       };
       saveData("farmsmart_disease_history", [item, ...hist].slice(0, 5));
-      const tr = await getTreatment(v.label, v.severity);
-      setTreatment(tr);
+      try {
+        const tr = await getTreatment(v.label, v.severity);
+        console.info("[FarmSmartAI] parsed result", { feature: "treatment", result: tr });
+        setTreatment(tr);
+      } catch (treatmentFailure) {
+        const msg = describeAiError(treatmentFailure);
+        console.error("[FarmSmartAI] failure reason", { feature: "treatment", error: msg });
+        setTreatmentError(`Treatment AI failed: ${msg}`);
+      }
     } catch (e) {
       if (e instanceof NonAgriculturalImageError) {
         setScanError(
           `This image does not appear to be a plant, crop, soil sample, or agricultural disease (detected: ${e.detectedObject}). Please upload a clear leaf photo.`,
         );
       } else {
-        setScanError("Could not analyze the image. Please try again with a clearer leaf photo.");
+        const msg = describeAiError(e);
+        console.error("[FarmSmartAI] failure reason", { feature: "disease", error: msg });
+        setScanError(msg);
       }
     } finally {
       setLoading(false);
@@ -192,6 +210,11 @@ function DiseaseDetection() {
         </div>
       )}
       {verdict && <VerdictCard verdict={verdict} />}
+      {treatmentError && (
+        <div className="glass-card rounded-2xl p-4 border border-destructive/40 bg-destructive/5">
+          <p className="text-sm text-destructive">{treatmentError}</p>
+        </div>
+      )}
       {treatment && <TreatmentCard treatment={treatment} />}
 
       {verdict && (
@@ -305,11 +328,11 @@ function VerdictCard({ verdict }: { verdict: EnsembleVerdict }) {
         <span className="text-2xl font-extrabold text-primary">{verdict.confidence}%</span>
       </div>
       <div className="border-t pt-3">
-        <p className="text-xs font-semibold mb-2">{verdict.agreementCount}/3 {t("agree")}</p>
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <p className="text-xs font-semibold mb-2">{verdict.agreementCount}/2 {t("agree")}</p>
+        <div className="grid grid-cols-2 gap-2 text-center">
           {verdict.sources.map((s) => (
             <div key={s.name} className={`rounded-lg p-2 text-[10px] ${s.ok ? "bg-success/15" : "bg-destructive/15"}`}>
-              <div className="font-bold uppercase">{s.name === "groq_vision" ? "Groq" : s.name === "tensorflow" ? "TF" : "Gemini"}</div>
+              <div className="font-bold uppercase">{s.name === "groq_vision" ? "Groq" : "Gemini"}</div>
               <div>{s.ok && s.result ? `${Math.round(s.result.confidence * 100)}%` : "—"}</div>
             </div>
           ))}
