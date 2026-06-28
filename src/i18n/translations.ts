@@ -74,7 +74,7 @@ export const translations = {
 
   // Disease
   diseaseTitle:  { en: "Disease Detection", hi: "रोग पहचान", ta: "நோய் கண்டறிதல்", kn: "ರೋಗ ಪತ್ತೆ", bn: "রোগ সনাক্তকরণ", te: "వ్యాధి గుర్తింపు", mr: "रोग ओळख", pa: "रोग पहचान" },
-  diseaseSub:    { en: "3 AI together — TensorFlow + Gemini + Groq", hi: "3 AI एक साथ — TensorFlow + Gemini + Groq", ta: "3 AI ஒன்றாக — TensorFlow + Gemini + Groq", kn: "3 AI ಒಟ್ಟಿಗೆ — TensorFlow + Gemini + Groq", bn: "৩ AI একসাথে — TensorFlow + Gemini + Groq", te: "3 AI కలిసి — TensorFlow + Gemini + Groq", mr: "३ AI एकत्र — TensorFlow + Gemini + Groq", pa: "3 AI एक साथ — TensorFlow + Gemini + Groq" },
+  diseaseSub:    { en: "Gemini + Groq vision analysis", hi: "Gemini + Groq विज़न विश्लेषण", ta: "Gemini + Groq பார்வை பகுப்பாய்வு", kn: "Gemini + Groq ದೃಶ್ಯ ವಿಶ್ಲೇಷಣೆ", bn: "Gemini + Groq ভিশন বিশ্লেষণ", te: "Gemini + Groq విజన్ విశ్లేషణ", mr: "Gemini + Groq व्हिजन विश्लेषण", pa: "Gemini + Groq विज਼ਨ ਵਿਸ਼ਲੇਸ਼ਣ" },
   takeLeafPhoto: { en: "Take a clear photo of the diseased leaf", hi: "रोगी पत्ती की साफ़ फोटो लें", ta: "நோய் பாதித்த இலையின் தெளிவான புகைப்படம்", kn: "ರೋಗಗ್ರಸ್ತ ಎಲೆಯ ಸ್ಪಷ್ಟ ಫೋಟೋ", bn: "রোগাক্রান্ত পাতার স্পষ্ট ছবি", te: "వ్యాధి సోకిన ఆకు స్పష్టమైన ఫోటో", mr: "रोगग्रस्त पानाचा स्पष्ट फोटो", pa: "रोगी पत्ती की साफ़ फोटो लें" },
   camera:        { en: "Camera", hi: "कैमरा", ta: "கேமரா", kn: "ಕ್ಯಾಮೆರಾ", bn: "ক্যামেরা", te: "కెమెరా", mr: "कॅमेरा", pa: "कैमरा" },
   upload:        { en: "Upload", hi: "अपलोड", ta: "பதிவேற்று", kn: "ಅಪ್ಲೋಡ್", bn: "আপলোড", te: "అప్లోడ్", mr: "अपलोड", pa: "अपलोड" },

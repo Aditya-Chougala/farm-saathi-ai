@@ -4,7 +4,7 @@ import { SoilAnalyzer, type SoilAnalysis } from "@/components/crop/SoilAnalyzer"
 import { FarmDetailsForm, type FarmDetails } from "@/components/crop/FarmDetailsForm";
 import { LoadingAnimation } from "@/components/crop/LoadingAnimation";
 import { CropResultCard } from "@/components/crop/CropResultCard";
-import { DEMO_CROPS, type DemoCrop } from "@/lib/demoResults";
+import type { DemoCrop } from "@/lib/demoResults";
 import { fetchWeather } from "@/lib/weatherApi";
 import { groqText } from "@/lib/groqApi";
 import { saveData } from "@/lib/db";
@@ -29,15 +29,17 @@ function CropPage() {
   const [soil, setSoil] = useState<SoilAnalysis | null>(null);
   const [results, setResults] = useState<DemoCrop[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const onSoilDone = (s: SoilAnalysis) => {
     setSoil(s);
+    setError(null);
     setStep("details");
   };
 
   const onDetailsSubmit = async (d: FarmDetails) => {
     setStep("loading");
-    let crops: DemoCrop[] = DEMO_CROPS;
+    setError(null);
     try {
       const w = await fetchWeather();
       const sys = "You are an Indian agronomy expert. Suggest 5 best crops as JSON. Reply in English. Use realistic Indian market prices in INR.";
@@ -46,13 +48,16 @@ Soil: ${soil?.soilType}, pH ${soil?.ph}, NPK ${soil?.nutrients.N}/${soil?.nutrie
 Weather: ${w.temperature}°C, humidity ${w.humidity}%, rain ${w.rain}mm.
 Reply JSON: { "crops": [ {cropName, cropNameHindi, cropEmoji, matchScore, financial:{costPerAcre,expectedRevenuePerAcre,expectedProfitPerAcre,roi}, risk:{level,mainRisks,riskScore}, timeline:{growingDays,sowingWindow,harvestWindow}, market:{currentPricePerKg,priceTrend,nearestMandi,priceForecast:[{month,price}x6]}, cultivation:{fertilizerSchedule,irrigationSchedule}, suitabilityReasons:[3], warnings:[2] } x5 ] }`;
       const out = await groqText(sys, user);
-      if (out?.crops?.length) crops = out.crops as DemoCrop[];
-    } catch {
-      // demo fallback
+      if (!Array.isArray(out?.crops) || out.crops.length === 0) throw new Error("Invalid response: Groq did not return crops.");
+      setResults(out.crops as DemoCrop[]);
+      saveData("farmsmart_last_crop_result", out.crops);
+      setStep("results");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[FarmSmartAI] failure reason", { feature: "crop-suggestion", error: msg });
+      setError(msg);
+      setStep("details");
     }
-    setResults(crops);
-    saveData("farmsmart_last_crop_result", crops);
-    setStep("results");
   };
 
   return (
@@ -60,6 +65,11 @@ Reply JSON: { "crops": [ {cropName, cropNameHindi, cropEmoji, matchScore, financ
       <Stepper step={step} />
 
       {step === "soil" && <SoilAnalyzer onComplete={onSoilDone} />}
+      {error && (
+        <div className="glass-card rounded-2xl p-4 border border-destructive/40 bg-destructive/5">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
       {step === "details" && <FarmDetailsForm onSubmit={onDetailsSubmit} onBack={() => setStep("soil")} />}
       {step === "loading" && <LoadingAnimation />}
       {step === "results" && (

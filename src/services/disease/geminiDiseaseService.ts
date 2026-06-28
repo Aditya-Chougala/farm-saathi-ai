@@ -29,10 +29,15 @@ export async function geminiDetect(base64DataUrl: string): Promise<VisionResult>
     diseaseName?: string;
     severity?: VisionResult["severity"];
   };
+  const label = String(ex.label || "");
+  const severity = ex.severity;
+  if (!PLANTVILLAGE_LABELS.includes(label)) throw new Error(`gemini_invalid_disease_label: ${label || "missing"}`);
+  if (severity !== "mild" && severity !== "moderate" && severity !== "severe") throw new Error(`gemini_invalid_severity: ${String(severity)}`);
+  if (!Number.isFinite(result.confidence)) throw new Error("gemini_invalid_confidence");
   return {
-    label: String(ex.label || "Tomato___Early_blight"),
-    confidence: Number(result.confidence ?? 0.6),
-    diseaseName: String(ex.diseaseName || result.diagnosis || "Unknown"),
-    severity: (ex.severity as VisionResult["severity"]) || "moderate",
+    label,
+    confidence: Math.max(0, Math.min(1, Number(result.confidence))),
+    diseaseName: String(ex.diseaseName || result.diagnosis || label),
+    severity,
   };
 }

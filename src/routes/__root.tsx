@@ -14,6 +14,7 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { VoiceFab } from "@/components/VoiceFab";
+import { validateAiEnvironmentFn } from "@/lib/ai.functions";
 
 function NotFoundComponent() {
   return (
@@ -99,6 +100,9 @@ function RootComponent() {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
+    validateAiEnvironmentFn()
+      .then((status) => console.info("[FarmSmartAI] startup environment validation", status))
+      .catch((error) => console.error("[FarmSmartAI] startup environment validation failed", error));
   }, []);
 
   return (
