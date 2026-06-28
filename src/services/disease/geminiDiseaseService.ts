@@ -31,7 +31,7 @@ export async function geminiDetect(base64DataUrl: string): Promise<VisionResult>
   };
   const label = String(ex.label || "");
   const severity = ex.severity;
-  if (!PLANTVILLAGE_LABELS.includes(label)) throw new Error(`gemini_invalid_disease_label: ${label || "missing"}`);
+  if (!(PLANTVILLAGE_LABELS as readonly string[]).includes(label)) throw new Error(`gemini_invalid_disease_label: ${label || "missing"}`);
   if (severity !== "mild" && severity !== "moderate" && severity !== "severe") throw new Error(`gemini_invalid_severity: ${String(severity)}`);
   if (!Number.isFinite(result.confidence)) throw new Error("gemini_invalid_confidence");
   return {

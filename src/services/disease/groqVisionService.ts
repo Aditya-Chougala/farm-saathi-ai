@@ -16,7 +16,7 @@ export async function groqVisionDetect(base64NoPrefix: string): Promise<VisionRe
   if (obj.is_agricultural === false) throw new NonAgriculturalImageError(String(obj.detected_object || "unknown"));
   const label = String(obj.label || "");
   const severity = obj.severity as VisionResult["severity"];
-  if (!PLANTVILLAGE_LABELS.includes(label)) throw new Error(`groq_invalid_disease_label: ${label || "missing"}`);
+  if (!(PLANTVILLAGE_LABELS as readonly string[]).includes(label)) throw new Error(`groq_invalid_disease_label: ${label || "missing"}`);
   if (severity !== "mild" && severity !== "moderate" && severity !== "severe") throw new Error(`groq_invalid_severity: ${String(severity)}`);
   return {
     label,

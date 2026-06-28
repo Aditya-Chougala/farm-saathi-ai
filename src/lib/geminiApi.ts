@@ -125,6 +125,6 @@ Reply ONLY with raw JSON matching this exact schema, no markdown:
     confidence: Number(obj.confidence ?? 0),
     diagnosis: String(obj.diagnosis ?? ""),
     recommendations: Array.isArray(obj.recommendations) ? obj.recommendations.map(String) : [],
-    extra: obj.extra ?? {},
+    extra: typeof obj.extra === "object" && obj.extra != null ? (obj.extra as Record<string, unknown>) : {},
   };
 }

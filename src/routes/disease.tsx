@@ -332,7 +332,7 @@ function VerdictCard({ verdict }: { verdict: EnsembleVerdict }) {
         <div className="grid grid-cols-2 gap-2 text-center">
           {verdict.sources.map((s) => (
             <div key={s.name} className={`rounded-lg p-2 text-[10px] ${s.ok ? "bg-success/15" : "bg-destructive/15"}`}>
-              <div className="font-bold uppercase">{s.name === "groq_vision" ? "Groq" : s.name === "tensorflow" ? "TF" : "Gemini"}</div>
+              <div className="font-bold uppercase">{s.name === "groq_vision" ? "Groq" : "Gemini"}</div>
               <div>{s.ok && s.result ? `${Math.round(s.result.confidence * 100)}%` : "—"}</div>
             </div>
           ))}
