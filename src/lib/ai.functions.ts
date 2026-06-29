@@ -207,6 +207,7 @@ export const debugGeminiLiveFn = createServerFn({ method: "POST" })
       response: { sent: false, received: false, httpStatus: 0, ok: false, rawBody: "", durationMs: 0 },
       parsed: { json: null as string | null, parseError: null as string | null },
       validator: { accepted: false, reason: "not_run", detectedObject: "", isAgricultural: false, confidence: 0 },
+      groq: { sent: false, httpStatus: 0, ok: false, durationMs: 0, parsed: null as string | null, error: null as string | null },
       exception: null as { message: string; stack: string } | null,
     };
 
