@@ -147,6 +147,24 @@ export function AiDebugPanel({ imageDataUrl }: Props) {
                 </pre>
               </div>
 
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Groq probe</div>
+                <Row k="Sent" v={bool(result.groq.sent)} />
+                <Row
+                  k="HTTP status"
+                  v={
+                    <span className={result.groq.ok ? "text-emerald-600" : result.groq.httpStatus === 0 ? "text-muted-foreground" : "text-destructive"}>
+                      {result.groq.httpStatus || "no response"}
+                    </span>
+                  }
+                />
+                <Row k="Duration (ms)" v={result.groq.durationMs} />
+                <Row k="Error" v={result.groq.error ?? "—"} />
+                <pre className="max-h-40 overflow-auto rounded-lg bg-secondary/60 p-2 text-[10px] whitespace-pre-wrap break-words">
+                  {result.groq.parsed ?? "(no content)"}
+                </pre>
+              </div>
+
               {result.exception && (
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-destructive mb-1">
