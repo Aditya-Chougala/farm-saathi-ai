@@ -169,6 +169,7 @@ export function SoilAnalyzer({ onComplete }: Props) {
           </pre>
         )}
       </div>
+      <AiDebugPanel imageDataUrl={preview} />
     </div>
   );
 }
