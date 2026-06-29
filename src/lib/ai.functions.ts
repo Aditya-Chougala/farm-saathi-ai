@@ -194,3 +194,117 @@ export const groqChatFn = createServerFn({ method: "POST" })
     }
     return { error: "groq_retries_exhausted", status: 0 };
   });
+
+export const debugGeminiLiveFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { base64?: string; prompt?: string }) => d)
+  .handler(async ({ data }) => {
+    const env = validateAiEnvironment();
+    const model = GEMINI_MODEL;
+    const result = {
+      env: { geminiKeyLoaded: env.gemini, groqKeyLoaded: env.groq },
+      model,
+      request: { url: "", payloadBytes: 0, promptChars: 0, imageBytes: 0, mimeType: "" },
+      response: { sent: false, received: false, httpStatus: 0, ok: false, rawBody: "", durationMs: 0 },
+      parsed: { json: null as string | null, parseError: null as string | null },
+      validator: { accepted: false, reason: "not_run", detectedObject: "", isAgricultural: false, confidence: 0 },
+      exception: null as { message: string; stack: string } | null,
+    };
+
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      result.validator.reason = "missing_gemini_key";
+      console.error("[FarmSmartAI][debug] missing GEMINI_API_KEY");
+      return result;
+    }
+
+    const prompt =
+      data.prompt ??
+      `Return ONLY JSON: {"detected_object":"short","is_agricultural":true|false,"confidence":0..1,"note":"brief"}.`;
+    result.request.promptChars = prompt.length;
+    result.request.url = `${GEMINI_URL}?key=[redacted]`;
+
+    const parts: Array<Record<string, unknown>> = [{ text: prompt }];
+    if (data.base64) {
+      const img = parseDataUrl(data.base64);
+      if (!img) {
+        result.validator.reason = "invalid_image";
+        console.error("[FarmSmartAI][debug] invalid image data");
+        return result;
+      }
+      result.request.imageBytes = img.data.length;
+      result.request.mimeType = img.mimeType;
+      parts.push({ inline_data: { mime_type: img.mimeType, data: img.data } });
+    } else {
+      result.request.mimeType = "(text-only ping)";
+    }
+
+    const body = JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 512, responseMimeType: "application/json" },
+    });
+    result.request.payloadBytes = body.length;
+
+    const t0 = Date.now();
+    try {
+      console.info("[FarmSmartAI][debug] sending Gemini request", { model, payloadBytes: body.length, hasImage: Boolean(data.base64) });
+      result.response.sent = true;
+      const r = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(key)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      result.response.received = true;
+      result.response.httpStatus = r.status;
+      result.response.ok = r.ok;
+      const raw = await r.text().catch(() => "");
+      result.response.rawBody = redactDetail(raw).slice(0, 4000);
+      result.response.durationMs = Date.now() - t0;
+      console.info("[FarmSmartAI][debug] Gemini status", { status: r.status, ok: r.ok, durationMs: result.response.durationMs });
+
+      if (r.ok) {
+        try {
+          const j = JSON.parse(raw);
+          const text = (j.candidates?.[0]?.content?.parts ?? [])
+            .map((p: { text?: string }) => p.text ?? "")
+            .join("")
+            .trim();
+          if (text) {
+            try {
+              const cleaned = text.replace(/```json\s*|```/gi, "").trim();
+              const start = cleaned.indexOf("{");
+              const end = cleaned.lastIndexOf("}");
+              const obj = start >= 0 && end > start ? JSON.parse(cleaned.slice(start, end + 1)) : null;
+              result.parsed.json = JSON.stringify(obj ?? { text }, null, 2);
+              if (obj && typeof obj === "object") {
+                result.validator.detectedObject = String(obj.detected_object ?? "");
+                result.validator.isAgricultural = Boolean(obj.is_agricultural);
+                result.validator.confidence = Number(obj.confidence ?? 0) || 0;
+                result.validator.accepted = result.validator.isAgricultural;
+                result.validator.reason = result.validator.accepted
+                  ? "is_agricultural=true"
+                  : "model classified image as non-agricultural";
+              } else {
+                result.validator.reason = "no_json_object_in_text";
+              }
+            } catch (pe) {
+              result.parsed.parseError = String(pe);
+              result.validator.reason = "json_parse_failed";
+            }
+          } else {
+            result.validator.reason = "empty_text_in_response";
+          }
+        } catch (pe) {
+          result.parsed.parseError = String(pe);
+          result.validator.reason = "response_not_json";
+        }
+      } else {
+        result.validator.reason = `http_${r.status}`;
+      }
+    } catch (e) {
+      result.exception = { message: String((e as Error)?.message ?? e), stack: String((e as Error)?.stack ?? "") };
+      result.validator.reason = "network_exception";
+      console.error("[FarmSmartAI][debug] exception", result.exception);
+    }
+
+    return result;
+  });
