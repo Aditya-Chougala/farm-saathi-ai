@@ -141,7 +141,7 @@ export function AiDebugPanel({ imageDataUrl }: Props) {
                   {result.parsed.parseError
                     ? `parse error: ${result.parsed.parseError}`
                     : result.parsed.json
-                      ? JSON.stringify(result.parsed.json, null, 2)
+                      ? result.parsed.json
                       : "(none)"}
                 </pre>
               </div>

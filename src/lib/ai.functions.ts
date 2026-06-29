@@ -274,7 +274,7 @@ export const debugGeminiLiveFn = createServerFn({ method: "POST" })
               const start = cleaned.indexOf("{");
               const end = cleaned.lastIndexOf("}");
               const obj = start >= 0 && end > start ? JSON.parse(cleaned.slice(start, end + 1)) : null;
-              result.parsed.json = obj ?? { text };
+              result.parsed.json = JSON.stringify(obj ?? { text }, null, 2);
               if (obj && typeof obj === "object") {
                 result.validator.detectedObject = String(obj.detected_object ?? "");
                 result.validator.isAgricultural = Boolean(obj.is_agricultural);
