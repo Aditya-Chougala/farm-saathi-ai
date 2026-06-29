@@ -205,7 +205,7 @@ export const debugGeminiLiveFn = createServerFn({ method: "POST" })
       model,
       request: { url: "", payloadBytes: 0, promptChars: 0, imageBytes: 0, mimeType: "" },
       response: { sent: false, received: false, httpStatus: 0, ok: false, rawBody: "", durationMs: 0 },
-      parsed: { json: null as unknown, parseError: null as string | null },
+      parsed: { json: null as string | null, parseError: null as string | null },
       validator: { accepted: false, reason: "not_run", detectedObject: "", isAgricultural: false, confidence: 0 },
       exception: null as { message: string; stack: string } | null,
     };
