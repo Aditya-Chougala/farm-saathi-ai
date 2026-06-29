@@ -5,6 +5,7 @@ import { runEnsemble, type EnsembleVerdict } from "@/services/disease/ensembleEn
 import { NonAgriculturalImageError } from "@/services/disease/geminiDiseaseService";
 import { getTreatment, type Treatment } from "@/services/disease/groqTreatmentService";
 import { describeAiError } from "@/lib/geminiApi";
+import { AiDebugPanel } from "@/components/debug/AiDebugPanel";
 import { diseaseHindi } from "@/constants/diseaseTranslations";
 import { saveData, getData } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageContext";
@@ -235,6 +236,7 @@ function DiseaseDetection() {
           onDeny={() => { setCamOpen(false); handleUpload(); }}
         />
       )}
+      <AiDebugPanel imageDataUrl={preview} />
     </div>
   );
 }
