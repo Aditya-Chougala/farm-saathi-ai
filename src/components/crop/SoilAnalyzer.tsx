@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { analyzeAgriImage, describeAiError, testGeminiConnection } from "@/lib/geminiApi";
 import { useLang } from "@/i18n/LanguageContext";
 import { SOIL_TYPES } from "@/lib/demoResults";
+import { AiDebugPanel } from "@/components/debug/AiDebugPanel";
 
 export interface SoilAnalysis {
   soilType: string;
