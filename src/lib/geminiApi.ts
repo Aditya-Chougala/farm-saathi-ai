@@ -1,5 +1,11 @@
 // Gemini Vision via server function (key stays on the server).
-import { geminiVisionFn, testGeminiConnectionFn } from "./ai.functions";
+import { geminiVisionFn, testGeminiConnectionFn, debugGeminiLiveFn } from "./ai.functions";
+
+export type LiveAiTestResult = Awaited<ReturnType<typeof debugGeminiLiveFn>>;
+
+export async function runLiveAiTest(imageDataUrl?: string): Promise<LiveAiTestResult> {
+  return (await debugGeminiLiveFn({ data: { base64: imageDataUrl } })) as LiveAiTestResult;
+}
 
 export class GeminiError extends Error {
   status: number;
