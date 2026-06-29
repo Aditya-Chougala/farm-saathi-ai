@@ -33,6 +33,7 @@ export function AiDebugPanel({ imageDataUrl }: Props) {
         response: { sent: false, received: false, httpStatus: 0, ok: false, rawBody: "", durationMs: 0 },
         parsed: { json: null, parseError: null },
         validator: { accepted: false, reason: "client_threw", detectedObject: "", isAgricultural: false, confidence: 0 },
+        groq: { sent: false, httpStatus: 0, ok: false, durationMs: 0, parsed: null, error: "client_threw" },
         exception: { message: String((e as Error)?.message ?? e), stack: String((e as Error)?.stack ?? "") },
       });
     } finally {
@@ -143,6 +144,24 @@ export function AiDebugPanel({ imageDataUrl }: Props) {
                     : result.parsed.json
                       ? result.parsed.json
                       : "(none)"}
+                </pre>
+              </div>
+
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Groq probe</div>
+                <Row k="Sent" v={bool(result.groq.sent)} />
+                <Row
+                  k="HTTP status"
+                  v={
+                    <span className={result.groq.ok ? "text-emerald-600" : result.groq.httpStatus === 0 ? "text-muted-foreground" : "text-destructive"}>
+                      {result.groq.httpStatus || "no response"}
+                    </span>
+                  }
+                />
+                <Row k="Duration (ms)" v={result.groq.durationMs} />
+                <Row k="Error" v={result.groq.error ?? "—"} />
+                <pre className="max-h-40 overflow-auto rounded-lg bg-secondary/60 p-2 text-[10px] whitespace-pre-wrap break-words">
+                  {result.groq.parsed ?? "(no content)"}
                 </pre>
               </div>
 

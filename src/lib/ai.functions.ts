@@ -207,6 +207,7 @@ export const debugGeminiLiveFn = createServerFn({ method: "POST" })
       response: { sent: false, received: false, httpStatus: 0, ok: false, rawBody: "", durationMs: 0 },
       parsed: { json: null as string | null, parseError: null as string | null },
       validator: { accepted: false, reason: "not_run", detectedObject: "", isAgricultural: false, confidence: 0 },
+      groq: { sent: false, httpStatus: 0, ok: false, durationMs: 0, parsed: null as string | null, error: null as string | null },
       exception: null as { message: string; stack: string } | null,
     };
 
@@ -304,6 +305,48 @@ export const debugGeminiLiveFn = createServerFn({ method: "POST" })
       result.exception = { message: String((e as Error)?.message ?? e), stack: String((e as Error)?.stack ?? "") };
       result.validator.reason = "network_exception";
       console.error("[FarmSmartAI][debug] exception", result.exception);
+    }
+
+    // Groq probe
+    const gKey = process.env.GROQ_API_KEY;
+    if (!gKey) {
+      result.groq.error = "missing_groq_key";
+    } else {
+      const t1 = Date.now();
+      try {
+        result.groq.sent = true;
+        const gr = await fetch(GROQ_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${gKey}` },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: "Return only JSON." },
+              { role: "user", content: 'Reply with {"ok":true,"provider":"groq"}.' },
+            ],
+            max_tokens: 64,
+          }),
+        });
+        result.groq.httpStatus = gr.status;
+        result.groq.ok = gr.ok;
+        result.groq.durationMs = Date.now() - t1;
+        const gtxt = await gr.text().catch(() => "");
+        if (gr.ok) {
+          try {
+            const gj = JSON.parse(gtxt);
+            const content = gj.choices?.[0]?.message?.content ?? "";
+            result.groq.parsed = typeof content === "string" ? content : JSON.stringify(content);
+          } catch (pe) {
+            result.groq.error = `parse_failed: ${String(pe)}`;
+          }
+        } else {
+          result.groq.error = redactDetail(gtxt).slice(0, 500);
+        }
+        console.info("[FarmSmartAI][debug] Groq status", { status: gr.status, ok: gr.ok });
+      } catch (e) {
+        result.groq.error = `network: ${String(e)}`;
+      }
     }
 
     return result;
