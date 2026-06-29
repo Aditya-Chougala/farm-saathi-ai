@@ -33,6 +33,7 @@ export function AiDebugPanel({ imageDataUrl }: Props) {
         response: { sent: false, received: false, httpStatus: 0, ok: false, rawBody: "", durationMs: 0 },
         parsed: { json: null, parseError: null },
         validator: { accepted: false, reason: "client_threw", detectedObject: "", isAgricultural: false, confidence: 0 },
+        groq: { sent: false, httpStatus: 0, ok: false, durationMs: 0, parsed: null, error: "client_threw" },
         exception: { message: String((e as Error)?.message ?? e), stack: String((e as Error)?.stack ?? "") },
       });
     } finally {
